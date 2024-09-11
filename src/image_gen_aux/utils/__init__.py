@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from .constants import SAFETENSORS_FILE_EXTENSION
 from .import_utils import IMAGE_AUX_SLOW_IMPORT, OptionalDependencyNotAvailable, _LazyModule, is_torch_available
 from .loading_utils import load_image
 from .model_utils import get_model_path

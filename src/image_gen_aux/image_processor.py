@@ -33,17 +33,26 @@ class ImageMixin:
     - Convert a NumPy image or a batch of images to a PIL image.
     """
 
-    def convert_image_to_tensor(self, image: Union[PIL.Image.Image, np.ndarray]) -> torch.Tensor:
+    def convert_image_to_tensor(
+        self, image: Union[PIL.Image.Image, np.ndarray, List[PIL.Image.Image]]
+    ) -> torch.Tensor:
         """
         Convert a PIL image or a NumPy array to a PyTorch tensor.
 
         Args:
-            image (Union[PIL.Image.Image, np.ndarray]): The input image, either as a PIL image or a NumPy array.
+            image (Union[PIL.Image.Image, np.ndarray]): The input image, either as a PIL image, a NumPy array or a list of
+                PIL images.
 
         Returns:
             torch.Tensor: The converted image as a PyTorch tensor.
         """
-        if isinstance(image, PIL.Image.Image):
+        if isinstance(image, (PIL.Image.Image, list)):
+            # We expect that if it is a list, it only should contain pillow images
+            if isinstance(image, list):
+                for single_image in image:
+                    if not isinstance(single_image, PIL.Image.Image):
+                        raise ValueError("All images in the list must be Pillow images.")
+
             image = self.pil_to_numpy(image)
 
         return self.numpy_to_pt(image)
@@ -139,3 +148,32 @@ class ImageMixin:
             pil_images = [Image.fromarray(image) for image in images]
 
         return pil_images
+
+    def scale_image(self, image: torch.Tensor, scale: float, mutiple_factor: int = 8) -> torch.Tensor:
+        """
+        Scales an image while maintaining aspect ratio and ensuring dimensions are multiples of `multiple_factor`.
+
+        Args:
+            image (`torch.Tensor`): The input image tensor of shape (batch, channels, height, width).
+            scale (`float`): The scaling factor applied to the image dimensions.
+            multiple_factor (`int`, *optional*, defaults to 8): The factor by which the new dimensions should be divisible.
+
+        Returns:
+            `torch.Tensor`: The scaled image tensor.
+        """
+        _batch, _channels, height, width = image.shape
+
+        # Calculate new dimensions while maintaining aspect ratio
+        new_height = int(height * scale)
+        new_width = int(width * scale)
+
+        # Ensure new dimensions are multiples of mutiple_factor
+        new_height = (new_height // mutiple_factor) * mutiple_factor
+        new_width = (new_width // mutiple_factor) * mutiple_factor
+
+        # Resize the image using the calculated dimensions
+        resized_image = torch.nn.functional.interpolate(
+            image, size=(new_height, new_width), mode="bilinear", align_corners=False
+        )
+
+        return resized_image

@@ -26,6 +26,7 @@ from .utils import IMAGE_AUX_SLOW_IMPORT, OptionalDependencyNotAvailable, _LazyM
 
 _import_structure = {
     "upscalers": [],
+    "preprocessors": [],
     "utils": [
         "OptionalDependencyNotAvailable",
         "is_torch_available",
@@ -42,6 +43,8 @@ except OptionalDependencyNotAvailable:
 else:
     _import_structure["upscalers"].extend(["UpscaleWithModel"])
 
+    _import_structure["preprocessors"].extend(["LineArtPreprocessor"])
+
 if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
     try:
         if not is_torch_available():
@@ -49,9 +52,8 @@ if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
     except OptionalDependencyNotAvailable:
         ...
     else:
-        from .upscalers import (
-            UpscaleWithModel,
-        )
+        from .preprocessors import LineArtPreprocessor
+        from .upscalers import UpscaleWithModel
 else:
     import sys
 

@@ -23,6 +23,7 @@ Set of auxiliary tools to use with image and video generation libraries. Mainly 
 Each set of tools has its own README where you can find more information on how to use them.
 
 * [Upscalers](https://github.com/asomoza/image_gen_aux/blob/main/src/image_gen_aux/upscalers/README.md)
+* [Preprocessors](https://github.com/asomoza/image_gen_aux/blob/main/src/image_gen_aux/preprocessors/README.md)
 
 ## Installation
 
@@ -53,3 +54,7 @@ This library uses inference and models from various authors. If you think you mu
 * [UltraSharp](https://openmodeldb.info/models/4x-UltraSharp)
 * [DAT](https://github.com/zhengchen1999/dat)
 * [RealPLKSR|DAT](https://github.com/Phhofm/models)
+
+### Preprocessors
+
+* [LineArt](https://github.com/carolineec/informative-drawings)

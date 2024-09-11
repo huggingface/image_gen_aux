@@ -107,9 +107,11 @@ _deps = [
     "requests-mock==1.10.0",
     "python>=3.8.0",
     "torch>=2.3",
-    "torchvision",
     "safetensors>=0.3.1",
     "spandrel",
+    "transformers",
+    "kornia",
+    "timm",
 ]
 
 # this is a lookup table with items like:
@@ -183,7 +185,7 @@ class DepsTableUpdateCommand(Command):
 extras = {}
 extras["quality"] = deps_list("urllib3", "isort", "ruff")
 extras["test"] = deps_list("pytest", "pytest-timeout", "pytest-xdist", "requests-mock")
-extras["torch"] = deps_list("torch", "torchvision")
+extras["torch"] = deps_list("torch")
 
 extras["dev"] = extras["quality"] + extras["test"] + extras["torch"]
 
@@ -193,6 +195,10 @@ install_requires = [
     deps["safetensors"],
     deps["Pillow"],
     deps["spandrel"],
+    deps["transformers"],
+    deps["kornia"],
+    deps["timm"],
+    deps["opencv-python-headless"],
 ]
 
 version_range_max = max(sys.version_info[1], 10) + 1
