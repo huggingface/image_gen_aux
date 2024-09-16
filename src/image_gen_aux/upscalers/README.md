@@ -53,5 +53,6 @@ This is the current list of safetensor checkpoints you can use from the hub.
 |DAT|4X|OzzyGT/DAT_X4|[zhengchen1999](https://github.com/zhengchen1999)|
 |RealPLKSR|4X|OzzyGT/4xNomosWebPhoto_RealPLKSR|[Philip Hofmann](https://huggingface.co/Phips)|
 |DAT-2|4X|Phips/4xRealWebPhoto_v4_dat2|[Philip Hofmann](https://huggingface.co/Phips)|
+|BSRGAN|4X|OzzyGT/4xRemacri|[FoolhardyVEVO](https://openmodeldb.info/users/foolhardy)|
 
 If you own the model and want us to change the repository to your name/organization please open an issue.
