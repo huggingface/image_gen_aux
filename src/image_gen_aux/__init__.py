@@ -14,7 +14,13 @@
 
 from typing import TYPE_CHECKING
 
-from .utils import IMAGE_AUX_SLOW_IMPORT, OptionalDependencyNotAvailable, _LazyModule, is_torch_available
+from .utils import (
+    IMAGE_AUX_SLOW_IMPORT,
+    OptionalDependencyNotAvailable,
+    _LazyModule,
+    is_torch_available,
+    is_transformers_available,
+)
 
 
 # Lazy Import based on
@@ -43,7 +49,7 @@ except OptionalDependencyNotAvailable:
 else:
     _import_structure["upscalers"].extend(["UpscaleWithModel"])
 
-    _import_structure["preprocessors"].extend(["LineArtPreprocessor"])
+    _import_structure["preprocessors"].extend(["LineArtPreprocessor", "DepthPreprocessor"])
 
 if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
     try:
@@ -54,6 +60,14 @@ if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
     else:
         from .preprocessors import LineArtPreprocessor
         from .upscalers import UpscaleWithModel
+
+    try:
+        if not (is_torch_available() and is_transformers_available()):
+            raise OptionalDependencyNotAvailable()
+    except OptionalDependencyNotAvailable:
+        ...
+    else:
+        from .preprocessors import DepthPreprocessor
 else:
     import sys
 

@@ -13,7 +13,13 @@
 # limitations under the License.
 
 from .constants import SAFETENSORS_FILE_EXTENSION
-from .import_utils import IMAGE_AUX_SLOW_IMPORT, OptionalDependencyNotAvailable, _LazyModule, is_torch_available
+from .import_utils import (
+    IMAGE_AUX_SLOW_IMPORT,
+    OptionalDependencyNotAvailable,
+    _LazyModule,
+    is_torch_available,
+    is_transformers_available,
+)
 from .loading_utils import load_image
 from .model_utils import get_model_path
 from .tiling_utils import create_gradient_mask, tiled_upscale

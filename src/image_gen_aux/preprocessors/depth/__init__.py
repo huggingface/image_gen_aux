@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from ..utils import (
+from ...utils import (
     IMAGE_AUX_SLOW_IMPORT,
     OptionalDependencyNotAvailable,
     _LazyModule,
@@ -9,21 +9,7 @@ from ..utils import (
 )
 
 
-_import_structure = {
-    "lineart": [],
-    "depth": [],
-}
-
-
-try:
-    if not (is_torch_available()):
-        raise OptionalDependencyNotAvailable()
-except OptionalDependencyNotAvailable:
-    ...
-else:
-    _import_structure["lineart"] = [
-        "LineArtPreprocessor",
-    ]
+_import_structure = {}
 
 try:
     if not (is_torch_available() and is_transformers_available()):
@@ -31,26 +17,20 @@ try:
 except OptionalDependencyNotAvailable:
     ...
 else:
-    _import_structure["depth"] = [
+    _import_structure["depth_preprocessor"] = [
         "DepthPreprocessor",
     ]
 
 if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
-    try:
-        if not is_torch_available():
-            raise OptionalDependencyNotAvailable()
-    except OptionalDependencyNotAvailable:
-        ...
-    else:
-        from .lineart import LineArtPreprocessor
-
     try:
         if not (is_torch_available() and is_transformers_available()):
             raise OptionalDependencyNotAvailable()
     except OptionalDependencyNotAvailable:
         ...
     else:
-        from .depth import DepthPreprocessor
+        from .depth_preprocessor import (
+            DepthPreprocessor,
+        )
 else:
     import sys
 

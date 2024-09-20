@@ -1,7 +1,5 @@
 # Line Art
 
-![Image](https://carolineec.github.io/informative_drawings/images/teaser.png)
-
 Line Art is based on the original repository, [Informative Drawings: Learning to generate line drawings that convey geometry and semantics](https://github.com/carolineec/informative-drawings).
 
 From the project page [summary](https://carolineec.github.io/informative_drawings/):
@@ -19,7 +17,7 @@ input_image = load_image(
 )
 
 lineart_preprocessor = LineArtPreprocessor.from_pretrained("OzzyGT/lineart").to("cuda")
-image = lineart_preprocessor(input_image)
+image = lineart_preprocessor(input_image)[0]
 image.save("lineart.png")
 ```
 

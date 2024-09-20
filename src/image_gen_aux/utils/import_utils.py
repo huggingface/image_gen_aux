@@ -48,9 +48,20 @@ else:
     logger.info("Disabling PyTorch because USE_TORCH is set")
     _torch_available = False
 
+_transformers_available = importlib.util.find_spec("transformers") is not None
+try:
+    _transformers_version = importlib_metadata.version("transformers")
+    logger.debug(f"Successfully imported transformers version {_transformers_version}")
+except importlib_metadata.PackageNotFoundError:
+    _transformers_available = False
+
 
 def is_torch_available():
     return _torch_available
+
+
+def is_transformers_available():
+    return _transformers_available
 
 
 class OptionalDependencyNotAvailable(BaseException):

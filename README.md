@@ -35,7 +35,7 @@ This is a very early version, so only the installation from source is available.
 
 ### Install with PyPi
 
-Soon
+`pip install git+https://github.com/asomoza/image_gen_aux.git`
 
 ## Contribution
 
@@ -59,3 +59,5 @@ This library uses inference and models from various authors. If you think you mu
 ### Preprocessors
 
 * [LineArt](https://github.com/carolineec/informative-drawings)
+* [Depth Anything V2](https://depth-anything-v2.github.io)
+* [ZoeDepth](https://github.com/isl-org/ZoeDepth)
