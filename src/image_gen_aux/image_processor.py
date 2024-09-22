@@ -34,7 +34,7 @@ class ImageMixin:
     """
 
     def convert_image_to_tensor(
-        self, image: Union[PIL.Image.Image, np.ndarray, List[PIL.Image.Image]]
+        self, image: Union[PIL.Image.Image, np.ndarray, List[PIL.Image.Image]], normalize: bool = True
     ) -> torch.Tensor:
         """
         Convert a PIL image or a NumPy array to a PyTorch tensor.
@@ -53,7 +53,7 @@ class ImageMixin:
                     if not isinstance(single_image, PIL.Image.Image):
                         raise ValueError("All images in the list must be Pillow images.")
 
-            image = self.pil_to_numpy(image)
+            image = self.pil_to_numpy(image, normalize)
 
         return self.numpy_to_pt(image)
 
@@ -79,7 +79,7 @@ class ImageMixin:
         return image
 
     @staticmethod
-    def pil_to_numpy(images: Union[List[PIL.Image.Image], PIL.Image.Image]) -> np.ndarray:
+    def pil_to_numpy(images: Union[List[PIL.Image.Image], PIL.Image.Image], normalize: bool = True) -> np.ndarray:
         """
         Convert a PIL image or a list of PIL images to NumPy arrays.
 
@@ -91,7 +91,12 @@ class ImageMixin:
         """
         if not isinstance(images, list):
             images = [images]
-        images = [np.array(image).astype(np.float32) / 255.0 for image in images]
+
+        if normalize:
+            images = [np.array(image).astype(np.float32) / 255.0 for image in images]
+        else:
+            images = [np.array(image).astype(np.float32) for image in images]
+
         images = np.stack(images, axis=0)
 
         return images
@@ -109,8 +114,8 @@ class ImageMixin:
         """
         if images.ndim == 3:
             images = images[..., None]
+        images = torch.from_numpy(images.transpose(0, 3, 1, 2)).float()
 
-        images = torch.from_numpy(images.transpose(0, 3, 1, 2))
         return images
 
     @staticmethod

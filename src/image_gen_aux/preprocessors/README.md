@@ -7,6 +7,8 @@ Preprocessors in this context refer to the application of machine learning model
 This is a list of the currently supported preprocessors.
 
 * [LineArtPreprocessor](https://github.com/asomoza/image_gen_aux/blob/main/src/image_gen_aux/preprocessors/lineart/README.md)
+* [DepthPreprocessor](https://github.com/asomoza/image_gen_aux/blob/main/src/image_gen_aux/preprocessors/depth/README.md)
+* [TeedPreprocessor](https://github.com/asomoza/image_gen_aux/blob/main/src/image_gen_aux/preprocessors/teed/README.md)
 
 ## General preprocessor usage
 
@@ -39,6 +41,13 @@ This is the current list of safetensor checkpoints available on the Hub.
 
 |Preprocessor|Repository|Author|
 |---|---|---|
+|Depth Anything V2 Small|depth-anything/Depth-Anything-V2-Small-hf|<https://depth-anything-v2.github.io/>|
+|Depth Anything V2 Base|depth-anything/Depth-Anything-V2-Base-hf|<https://depth-anything-v2.github.io/>|
+|Depth Anything V2 Large|depth-anything/Depth-Anything-V2-Large-hf|<https://depth-anything-v2.github.io/>|
 |LineArt|OzzyGT/lineart|[Caroline Chan](https://github.com/carolineec)|
+|Teed|OzzyGT/teed|<https://github.com/xavysp/TEED>|
+|ZoeDepth NYU|Intel/zoedepth-nyu|<https://github.com/isl-org/ZoeDepth>|
+|ZoeDepth KITTI|Intel/zoedepth-kitti|<https://github.com/isl-org/ZoeDepth>|
+|ZoeDepth NYU and KITTI|Intel/zoedepth-nyu-kitti|<https://github.com/isl-org/ZoeDepth>|
 
 If you own the model and want us to change the repository to your name/organization please open an issue.

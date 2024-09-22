@@ -60,4 +60,5 @@ This library uses inference and models from various authors. If you think you mu
 
 * [LineArt](https://github.com/carolineec/informative-drawings)
 * [Depth Anything V2](https://depth-anything-v2.github.io)
+* [TEED](https://github.com/xavysp/TEED)
 * [ZoeDepth](https://github.com/isl-org/ZoeDepth)

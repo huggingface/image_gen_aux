@@ -49,7 +49,7 @@ except OptionalDependencyNotAvailable:
 else:
     _import_structure["upscalers"].extend(["UpscaleWithModel"])
 
-    _import_structure["preprocessors"].extend(["LineArtPreprocessor", "DepthPreprocessor"])
+    _import_structure["preprocessors"].extend(["LineArtPreprocessor", "DepthPreprocessor", "TeedPreprocessor"])
 
 if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
     try:
@@ -58,7 +58,7 @@ if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
     except OptionalDependencyNotAvailable:
         ...
     else:
-        from .preprocessors import LineArtPreprocessor
+        from .preprocessors import LineArtPreprocessor, TeedPreprocessor
         from .upscalers import UpscaleWithModel
 
     try:

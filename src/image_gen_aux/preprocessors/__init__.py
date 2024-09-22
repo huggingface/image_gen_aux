@@ -12,6 +12,7 @@ from ..utils import (
 _import_structure = {
     "lineart": [],
     "depth": [],
+    "teed": [],
 }
 
 
@@ -21,9 +22,8 @@ try:
 except OptionalDependencyNotAvailable:
     ...
 else:
-    _import_structure["lineart"] = [
-        "LineArtPreprocessor",
-    ]
+    _import_structure["lineart"] = ["LineArtPreprocessor"]
+    _import_structure["teed"] = ["TeedPreprocessor"]
 
 try:
     if not (is_torch_available() and is_transformers_available()):
@@ -43,6 +43,7 @@ if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
         ...
     else:
         from .lineart import LineArtPreprocessor
+        from .teed import TeedPreprocessor
 
     try:
         if not (is_torch_available() and is_transformers_available()):
