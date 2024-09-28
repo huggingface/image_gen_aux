@@ -101,11 +101,13 @@ class TeedPreprocessor(Preprocessor, ImageMixin):
                 edge = 1 - edge
 
             processed_images.append(edge.unsqueeze(0).cpu())
-
         teed = torch.cat(processed_images, dim=0)
 
         # add missing channel
         teed = teed.unsqueeze(1)
+
+        if resolution_scale != 1.0:
+            teed = self.scale_image(teed, 1 / resolution_scale)
 
         image = self.post_process_image(teed, return_type)
 

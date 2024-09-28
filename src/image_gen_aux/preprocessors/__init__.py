@@ -13,6 +13,7 @@ _import_structure = {
     "lineart": [],
     "depth": [],
     "teed": [],
+    "lineart_standard": ["LineArtStandardPreprocessor"],
 }
 
 
@@ -36,6 +37,8 @@ else:
     ]
 
 if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
+    from .lineart_standard import LineArtStandardPreprocessor
+
     try:
         if not is_torch_available():
             raise OptionalDependencyNotAvailable()

@@ -6,8 +6,9 @@ Preprocessors in this context refer to the application of machine learning model
 
 This is a list of the currently supported preprocessors.
 
-* [LineArtPreprocessor](https://github.com/asomoza/image_gen_aux/blob/main/src/image_gen_aux/preprocessors/lineart/README.md)
 * [DepthPreprocessor](https://github.com/asomoza/image_gen_aux/blob/main/src/image_gen_aux/preprocessors/depth/README.md)
+* [LineArtPreprocessor](https://github.com/asomoza/image_gen_aux/blob/main/src/image_gen_aux/preprocessors/lineart/README.md)
+* [LineArtStandardPreprocessor](https://github.com/asomoza/image_gen_aux/blob/main/src/image_gen_aux/preprocessors/lineart_standard/README.md)
 * [TeedPreprocessor](https://github.com/asomoza/image_gen_aux/blob/main/src/image_gen_aux/preprocessors/teed/README.md)
 
 ## General preprocessor usage

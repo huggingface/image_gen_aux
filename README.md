@@ -58,7 +58,8 @@ This library uses inference and models from various authors. If you think you mu
 
 ### Preprocessors
 
-* [LineArt](https://github.com/carolineec/informative-drawings)
 * [Depth Anything V2](https://depth-anything-v2.github.io)
+* [LineArt](https://github.com/carolineec/informative-drawings)
+* [LineArtStandard](https://github.com/Fannovel16/comfyui_controlnet_aux/blob/main/src/custom_controlnet_aux/lineart_standard/__init__.py)
 * [TEED](https://github.com/xavysp/TEED)
 * [ZoeDepth](https://github.com/isl-org/ZoeDepth)

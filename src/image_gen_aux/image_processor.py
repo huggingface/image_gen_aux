@@ -14,6 +14,7 @@
 
 from typing import List, Union
 
+import cv2
 import numpy as np
 import PIL.Image
 import torch
@@ -154,7 +155,8 @@ class ImageMixin:
 
         return pil_images
 
-    def scale_image(self, image: torch.Tensor, scale: float, mutiple_factor: int = 8) -> torch.Tensor:
+    @staticmethod
+    def scale_image(image: torch.Tensor, scale: float, mutiple_factor: int = 8) -> torch.Tensor:
         """
         Scales an image while maintaining aspect ratio and ensuring dimensions are multiples of `multiple_factor`.
 
@@ -182,3 +184,40 @@ class ImageMixin:
         )
 
         return resized_image
+
+    @staticmethod
+    def resize_numpy_image(image: np.ndarray, scale: float, multiple_factor: int = 8) -> np.ndarray:
+        """
+        Resizes a NumPy image while maintaining aspect ratio and ensuring dimensions are multiples of `multiple_factor`.
+
+        Args:
+            image (`np.ndarray`): The input image array of shape (height, width, channels) or (height, width) for grayscale.
+            scale (`float`): The scaling factor applied to the image dimensions.
+            multiple_factor (`int`, *optional*, defaults to 8): The factor by which the new dimensions should be divisible.
+
+        Returns:
+            `np.ndarray`: The resized image array.
+        """
+        if len(image.shape) == 3:  # Single image without batch dimension
+            image = np.expand_dims(image, axis=0)
+
+        batch_size, height, width, channels = image.shape
+
+        # Calculate new dimensions while maintaining aspect ratio
+        new_height = int(height * scale)
+        new_width = int(width * scale)
+
+        # Ensure new dimensions are multiples of multiple_factor
+        new_height = (new_height // multiple_factor) * multiple_factor
+        new_width = (new_width // multiple_factor) * multiple_factor
+
+        # Resize each image in the batch
+        resized_images = []
+        for i in range(batch_size):
+            resized_image = cv2.resize(image[i], (new_width, new_height), interpolation=cv2.INTER_LINEAR)
+            resized_images.append(resized_image)
+
+        # Stack resized images back into a single array
+        resized_images = np.stack(resized_images, axis=0)
+
+        return resized_images
