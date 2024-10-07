@@ -36,7 +36,7 @@ class DepthPreprocessor(Preprocessor, ImageMixin):
         if not isinstance(image, torch.Tensor):
             image = self.convert_image_to_tensor(image).to(self.model.device)
 
-        image = self.scale_image(image, resolution_scale) if resolution_scale != 1.0 else image
+        image, resolution_scale = self.scale_image(image, resolution_scale) if resolution_scale != 1.0 else image
 
         processed_images = []
 
@@ -60,7 +60,7 @@ class DepthPreprocessor(Preprocessor, ImageMixin):
         predicted_depth = torch.cat(processed_images, dim=0)
 
         if resolution_scale != 1.0:
-            predicted_depth = self.scale_image(predicted_depth, 1 / resolution_scale)
+            predicted_depth, _ = self.scale_image(predicted_depth, 1 / resolution_scale)
 
         predicted_depth = (predicted_depth - predicted_depth.min()) / (predicted_depth.max() - predicted_depth.min())
         predicted_depth = predicted_depth.clamp(0, 1)

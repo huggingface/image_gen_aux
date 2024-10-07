@@ -19,7 +19,7 @@ class LineArtStandardPreprocessor(ImageMixin):
         image: Union[PIL.Image.Image, np.ndarray, List[PIL.Image.Image]],
         resolution_scale: float = 1.0,
         invert: bool = False,
-        guassian_sigma=6.0,
+        gaussian_sigma=6.0,
         intensity_threshold=8,
         return_type: str = "pil",
     ):
@@ -31,7 +31,7 @@ class LineArtStandardPreprocessor(ImageMixin):
             resolution_scale (`float`, optional, defaults to 1.0): Scale factor for image resolution during
                 preprocessing and post-processing. Defaults to 1.0 for no scaling.
             invert (`bool`, *optional*, defaults to True): Inverts the generated image if True (white or black background).
-            guassian_sigma (float, optional): Sigma value for Gaussian blur. Defaults to 6.0.
+            gaussian_sigma (float, optional): Sigma value for Gaussian blur. Defaults to 6.0.
             intensity_threshold (int, optional): Threshold for intensity clipping. Defaults to 8.
             return_type (`str`, *optional*, defaults to "pil"): The desired return type, either "pt" for PyTorch tensor, "np" for NumPy array,
                 or "pil" for PIL image.
@@ -47,14 +47,16 @@ class LineArtStandardPreprocessor(ImageMixin):
         if len(image.shape) == 3:
             image = image[None, ...]
 
-        image = self.resize_numpy_image(image, resolution_scale) if resolution_scale != 1.0 else image
+        image, resolution_scale = (
+            self.resize_numpy_image(image, resolution_scale) if resolution_scale != 1.0 else image
+        )
 
         batch_size, height, width, _channels = image.shape
         processed_images = np.empty((batch_size, height, width), dtype=np.uint8)
 
         # since we're using just cv2, we can't do batch processing
         for i in range(batch_size):
-            gaussian = cv2.GaussianBlur(image[i], (0, 0), guassian_sigma)
+            gaussian = cv2.GaussianBlur(image[i], (0, 0), gaussian_sigma)
             intensity = np.min(gaussian - image[i], axis=2).clip(0, 255)
             intensity /= max(16, np.median(intensity[intensity > intensity_threshold]))
             intensity *= 127
@@ -68,7 +70,7 @@ class LineArtStandardPreprocessor(ImageMixin):
         processed_images = processed_images[..., None]
 
         if resolution_scale != 1.0:
-            processed_images = self.resize_numpy_image(processed_images, 1 / resolution_scale)
+            processed_images, _ = self.resize_numpy_image(processed_images, 1 / resolution_scale)
             processed_images = processed_images[..., None]  # cv2 resize removes the channel dimension if grayscale
 
         if return_type == "np":

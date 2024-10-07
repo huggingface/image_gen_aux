@@ -178,12 +178,15 @@ class ImageMixin:
         new_height = (new_height // mutiple_factor) * mutiple_factor
         new_width = (new_width // mutiple_factor) * mutiple_factor
 
+        # if the final height and widht changed because of the multiple_factor, we need to set the scale too
+        scale = new_height / height
+
         # Resize the image using the calculated dimensions
         resized_image = torch.nn.functional.interpolate(
             image, size=(new_height, new_width), mode="bilinear", align_corners=False
         )
 
-        return resized_image
+        return resized_image, scale
 
     @staticmethod
     def resize_numpy_image(image: np.ndarray, scale: float, multiple_factor: int = 8) -> np.ndarray:
@@ -211,6 +214,9 @@ class ImageMixin:
         new_height = (new_height // multiple_factor) * multiple_factor
         new_width = (new_width // multiple_factor) * multiple_factor
 
+        # if the final height and widht changed because of the multiple_factor, we need to set the scale too
+        scale = new_height / height
+
         # Resize each image in the batch
         resized_images = []
         for i in range(batch_size):
@@ -220,4 +226,4 @@ class ImageMixin:
         # Stack resized images back into a single array
         resized_images = np.stack(resized_images, axis=0)
 
-        return resized_images
+        return resized_images, scale

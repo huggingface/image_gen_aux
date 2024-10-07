@@ -81,7 +81,7 @@ class LineArtPreprocessor(Preprocessor, ImageMixin):
         if not isinstance(image, torch.Tensor):
             image = self.convert_image_to_tensor(image)
 
-        image = self.scale_image(image, resolution_scale) if resolution_scale != 1.0 else image
+        image, resolution_scale = self.scale_image(image, resolution_scale) if resolution_scale != 1.0 else image
 
         processed_images = []
 
@@ -94,7 +94,7 @@ class LineArtPreprocessor(Preprocessor, ImageMixin):
         lineart = torch.cat(processed_images, dim=0)
 
         if resolution_scale != 1.0:
-            lineart = self.scale_image(lineart, 1 / resolution_scale)
+            lineart, _ = self.scale_image(lineart, 1 / resolution_scale)
 
         image = self.post_process_image(lineart, return_type)
 

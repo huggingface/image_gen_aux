@@ -71,6 +71,8 @@ class TeedPreprocessor(Preprocessor, ImageMixin):
             resolution_scale (`float`, optional, defaults to 1.0): Scale factor for image resolution during
                 preprocessing and post-processing. Defaults to 1.0 for no scaling.
             invert (`bool`, *optional*, defaults to True): Inverts the generated image if True (white or black background).
+            safe_steps (int, optional):
+                Number of safe steps for the TEED model. Defaults to 2.
             batch_size (`int`, *optional*, defaults to 1): The number of images to process in each batch.
             return_type (`str`, *optional*, defaults to "pil"): The desired return type, either "pt" for PyTorch tensor, "np" for NumPy array,
                 or "pil" for PIL image.
@@ -82,7 +84,7 @@ class TeedPreprocessor(Preprocessor, ImageMixin):
         if not isinstance(image, torch.Tensor):
             image = self.convert_image_to_tensor(image, normalize=False)
 
-        image = self.scale_image(image, resolution_scale) if resolution_scale != 1.0 else image
+        image, resolution_scale = self.scale_image(image, resolution_scale) if resolution_scale != 1.0 else image
 
         processed_images = []
 
@@ -107,7 +109,7 @@ class TeedPreprocessor(Preprocessor, ImageMixin):
         teed = teed.unsqueeze(1)
 
         if resolution_scale != 1.0:
-            teed = self.scale_image(teed, 1 / resolution_scale)
+            teed, _ = self.scale_image(teed, 1 / resolution_scale)
 
         image = self.post_process_image(teed, return_type)
 
