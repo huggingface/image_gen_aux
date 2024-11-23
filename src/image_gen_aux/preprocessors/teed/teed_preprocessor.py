@@ -84,7 +84,7 @@ class TeedPreprocessor(Preprocessor, ImageMixin):
         if not isinstance(image, torch.Tensor):
             image = self.convert_image_to_tensor(image, normalize=False)
 
-        image, resolution_scale = self.scale_image(image, resolution_scale) if resolution_scale != 1.0 else image
+        image, resolution_scale = self.scale_image(image, resolution_scale)
 
         processed_images = []
 
