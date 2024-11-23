@@ -168,6 +168,10 @@ class ImageMixin:
         Returns:
             `torch.Tensor`: The scaled image tensor.
         """
+
+        if scale == 1.0:
+            return image, scale
+
         _batch, _channels, height, width = image.shape
 
         # Calculate new dimensions while maintaining aspect ratio
