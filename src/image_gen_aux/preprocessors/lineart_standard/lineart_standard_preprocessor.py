@@ -47,9 +47,7 @@ class LineArtStandardPreprocessor(ImageMixin):
         if len(image.shape) == 3:
             image = image[None, ...]
 
-        image, resolution_scale = (
-            self.resize_numpy_image(image, resolution_scale) if resolution_scale != 1.0 else image
-        )
+        image, resolution_scale = self.resize_numpy_image(image, resolution_scale)
 
         batch_size, height, width, _channels = image.shape
         processed_images = np.empty((batch_size, height, width), dtype=np.uint8)
