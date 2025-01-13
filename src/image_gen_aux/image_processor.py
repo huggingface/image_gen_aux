@@ -205,6 +205,10 @@ class ImageMixin:
         Returns:
             `np.ndarray`: The resized image array.
         """
+
+        if scale == 1.0:
+            return image, scale
+
         if len(image.shape) == 3:  # Single image without batch dimension
             image = np.expand_dims(image, axis=0)
 
