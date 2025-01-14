@@ -23,6 +23,8 @@ from .utils import (
 )
 
 
+__version__ = "0.0.1"
+
 # Lazy Import based on
 # https://github.com/huggingface/transformers/blob/main/src/transformers/__init__.py
 
