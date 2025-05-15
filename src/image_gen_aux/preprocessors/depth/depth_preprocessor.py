@@ -10,6 +10,8 @@ from transformers import AutoModelForDepthEstimation
 from ...image_processor import ImageMixin
 from ..preprocessor import Preprocessor
 
+from huggingface_hub.utils import validate_hf_hub_args
+
 
 class DepthPreprocessor(Preprocessor, ImageMixin):
     """Preprocessor specifically designed for monocular depth estimation.
@@ -19,8 +21,9 @@ class DepthPreprocessor(Preprocessor, ImageMixin):
     """
 
     @classmethod
-    def from_pretrained(cls, pretrained_model_or_path: Union[str, os.PathLike]):
-        model = AutoModelForDepthEstimation.from_pretrained(pretrained_model_or_path)
+    @validate_hf_hub_args
+    def from_pretrained(cls, pretrained_model_or_path: Union[str, os.PathLike], **kwargs):
+        model = AutoModelForDepthEstimation.from_pretrained(pretrained_model_or_path, **kwargs)
 
         return cls(model)
 
