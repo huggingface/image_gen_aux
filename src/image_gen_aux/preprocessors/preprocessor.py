@@ -1,12 +1,14 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Union
 
 import numpy as np
 import PIL.Image
 import torch
 
+from ..base_model_processor import BaseModelProcessor
 
-class Preprocessor(ABC):
+
+class Preprocessor(BaseModelProcessor):
     """
     This abstract base class defines the interface for image preprocessors.
 
@@ -17,35 +19,6 @@ class Preprocessor(ABC):
     Args:
         model (`nn.Module`): The torch model to use.
     """
-
-    def __init__(self, model):
-        self.model = model
-
-    def to(self, device):
-        """
-        Moves the underlying model to the specified device
-        (e.g., CPU or GPU).
-
-        Args:
-            device (`torch.device`): The target device.
-
-        Returns:
-            `Preprocessor`: The preprocessor object itself (for method chaining).
-        """
-        self.model = self.model.to(device)
-        return self
-
-    @abstractmethod
-    def from_pretrained(self):
-        """
-        This abstract method defines how the preprocessor loads pre-trained
-        weights or configurations specific to the model it supports. Subclasses
-        must implement this method to handle model-specific loading logic.
-
-        This method might download pre-trained weights from a repository or
-        load them from a local file depending on the model's requirements.
-        """
-        pass
 
     @abstractmethod
     def __call__(
@@ -61,7 +34,6 @@ class Preprocessor(ABC):
         Args:
             image (`Union[PIL.Image.Image, np.ndarray, torch.Tensor]`): Input image as PIL Image,
                 NumPy array, or PyTorch tensor format.
-            resolution_scale (`float`, optional, defaults to 1.0): Scale factor for image resolution during
             resolution_scale (`float`, *optional*, defaults to 1.0): Scale factor for image resolution during
                 preprocessing and post-processing. Defaults to 1.0 for no scaling.
             invert (`bool`, *optional*, defaults to True): Inverts the generated image if True.
