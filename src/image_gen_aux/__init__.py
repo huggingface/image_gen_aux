@@ -33,6 +33,7 @@ from .utils import (
 _import_structure = {
     "upscalers": [],
     "preprocessors": ["LineArtStandardPreprocessor"],
+    "background_removers": ["BEN2BackgroundRemover"],
     "utils": [
         "OptionalDependencyNotAvailable",
         "is_torch_available",
@@ -48,8 +49,8 @@ except OptionalDependencyNotAvailable:
     ...
 else:
     _import_structure["upscalers"].extend(["UpscaleWithModel"])
-
     _import_structure["preprocessors"].extend(["DepthPreprocessor", "LineArtPreprocessor", "TeedPreprocessor"])
+    _import_structure["background_removers"].extend(["BEN2BackgroundRemover"])
 
 if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
     from .preprocessors import LineArtStandardPreprocessor
@@ -60,6 +61,7 @@ if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
     except OptionalDependencyNotAvailable:
         ...
     else:
+        from .background_removers import BEN2BackgroundRemover
         from .preprocessors import LineArtPreprocessor, TeedPreprocessor
         from .upscalers import UpscaleWithModel
 
