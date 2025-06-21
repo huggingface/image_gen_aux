@@ -11,7 +11,7 @@ try:
 except OptionalDependencyNotAvailable:
     ...
 else:
-    _import_structure["BEN2_background_remover"] = [
+    _import_structure["ben2_background_remover"] = [
         "BEN2BackgroundRemover",
     ]
 
@@ -22,7 +22,7 @@ if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
     except OptionalDependencyNotAvailable:
         ...
     else:
-        from .BEN2_background_remover import (
+        from .ben2_background_remover import (
             BEN2BackgroundRemover,
         )
 else:

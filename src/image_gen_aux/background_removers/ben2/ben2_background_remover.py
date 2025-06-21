@@ -23,7 +23,7 @@ from PIL import Image
 
 from ...image_processor import ImageMixin
 from ..background_remover import BackgroundRemover
-from .BEN2 import BEN_Base
+from .ben2 import BEN_Base
 
 
 class BEN2BackgroundRemover(BackgroundRemover, ImageMixin):
