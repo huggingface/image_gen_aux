@@ -1027,8 +1027,3 @@ class BEN_Base(
             outputs.append(mask)
 
         return torch.cat(outputs, dim=0)
-
-    def loadcheckpoints(self, model_path):
-        model_dict = torch.load(model_path, map_location="cpu", weights_only=True)
-        self.load_state_dict(model_dict["model_state_dict"], strict=True)
-        del model_path
