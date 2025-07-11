@@ -9,9 +9,7 @@ from ..utils import (
 )
 
 
-_import_structure = {
-    "ben2": [],
-}
+_import_structure = {}
 
 try:
     if not (is_torch_available()):
