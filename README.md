@@ -24,6 +24,7 @@ Each set of tools has its own README where you can find more information on how 
 
 * [Upscalers](https://github.com/asomoza/image_gen_aux/blob/main/src/image_gen_aux/upscalers/README.md)
 * [Preprocessors](https://github.com/asomoza/image_gen_aux/blob/main/src/image_gen_aux/preprocessors/README.md)
+* [Background Removers](https://github.com/asomoza/image_gen_aux/blob/main/src/image_gen_aux/background_removers/README.md)
 
 ## Installation
 
@@ -63,3 +64,7 @@ This library uses inference and models from various authors. If you think you mu
 * [LineArtStandard](https://github.com/Fannovel16/comfyui_controlnet_aux/blob/main/src/custom_controlnet_aux/lineart_standard/__init__.py)
 * [TEED](https://github.com/xavysp/TEED)
 * [ZoeDepth](https://github.com/isl-org/ZoeDepth)
+
+### Background removers
+
+* [BEN2][https://github.com/PramaLLC/BEN2/]
