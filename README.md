@@ -67,4 +67,4 @@ This library uses inference and models from various authors. If you think you mu
 
 ### Background removers
 
-* [BEN2][https://github.com/PramaLLC/BEN2/]
+* [BEN2](https://github.com/PramaLLC/BEN2/)
