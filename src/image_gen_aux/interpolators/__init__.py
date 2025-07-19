@@ -12,13 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+from .rife import IntermediateFlowNet, RIFEPipeline
 
 
-CONFIG_NAME = "config.json"
-HUGGINGFACE_CO_RESOLVE_ENDPOINT = os.environ.get("HF_ENDPOINT", "https://huggingface.co")
-SAFETENSORS_FILE_EXTENSION = "safetensors"
-SAFETENSORS_WEIGHTS_NAME = "image_gen_aux_pytorch_model.safetensors"
-SAFETENSORS_WEIGHTS_INDEX_NAME = "image_gen_aux_pytorch_model.safetensors.index.json"
-WEIGHTS_NAME = "image_gen_aux_pytorch_model.bin"
-WEIGHTS_INDEX_NAME = "image_gen_aux_pytorch_model.bin.index.json"
+__version__ = "0.0.1"

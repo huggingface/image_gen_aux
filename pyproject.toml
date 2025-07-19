@@ -1,6 +1,7 @@
 
 [tool.ruff]
 line-length = 119
+indent-width = 4
 
 [tool.ruff.lint]
 # Never enforce `E501` (line length violations).
@@ -10,7 +11,6 @@ select = ["C", "E", "F", "I", "W"]
 # Ignore import violations in all `__init__.py` files.
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["E402", "F401", "F403", "F811"]
-"src/diffusers/utils/dummy_*.py" = ["F401"]
 
 [tool.ruff.lint.isort]
 lines-after-imports = 2
