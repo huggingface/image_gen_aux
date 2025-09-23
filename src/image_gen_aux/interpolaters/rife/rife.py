@@ -1,97 +1,120 @@
+import os
+import cv2
 import torch
-import torch.nn as nn
+from torch.nn import functional as F
 import numpy as np
-from torch.optim import AdamW
-import torch.optim as optim
-import itertools
-from model.warplayer import warp
-from torch.nn.parallel import DistributedDataParallel as DDP
-from model.IFNet import *
-from model.IFNet_m import *
-import torch.nn.functional as F
-from model.loss import *
-from model.laplacian import *
-from model.refine import *
+import PIL.Image
+from .RIFE_HDv3 import Model
+from ..interpolater import Interpolater
+from huggingface_hub.utils import validate_hf_hub_args
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+class RIFE(Interpolater):
+    def __init__(self):
+        super().__init__()
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        torch.set_grad_enabled(False)
+        if torch.cuda.is_available():
+            torch.backends.cudnn.enabled = True
+            torch.backends.cudnn.benchmark = True
+
+        # load RIFE model once
+        self.model = Model()
+        self.model.load_model(model_dir, -1)
+        self.model.eval()
+        self.model.device()
+        print("Loaded v3.x HD model.")
     
-class Model:
-    def __init__(self, local_rank=-1, arbitrary=False):
-        if arbitrary == True:
-            self.flownet = IFNet_m()
+    @classmethod
+    @validate_hf_hub_args
+    def from_pretrained(cls, pretrained_model_or_path, **kwargs):
+        model = Model.from_pretrained(pretrained_model_or_path, **kwargs)
+        return cls(model)
+
+    def interpolate(self, image: np.ndarray, **kwargs) -> PIL.Image.Image:
+        """Abstract method (required by base class). Not used here directly."""
+        raise NotImplementedError("Use interpolate_images() instead")
+
+    def interpolate_images(self, img0_path, img1_path, exp=4, ratio=0.0, rthreshold=0.02, rmaxcycles=8, save_output=True):
+        """Interpolate between two images using RIFE.
+
+        Args:
+            img0_path (str): path to first image
+            img1_path (str): path to second image
+            exp (int): number of interpolation iterations (ignored if ratio > 0)
+            ratio (float): specific interpolation ratio (0–1). If >0, ignores exp
+            rthreshold (float): threshold for ratio matching
+            rmaxcycles (int): max number of recursive cycles
+            save_output (bool): whether to save results in ./output
+
+        Returns:
+            List of numpy arrays of interpolated frames.
+        """
+
+        # load images
+        if img0_path.endswith('.exr') and img1_path.endswith('.exr'):
+            img0 = cv2.imread(img0_path, cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)
+            img1 = cv2.imread(img1_path, cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)
+            img0 = (torch.tensor(img0.transpose(2, 0, 1)).to(self.device)).unsqueeze(0)
+            img1 = (torch.tensor(img1.transpose(2, 0, 1)).to(self.device)).unsqueeze(0)
         else:
-            self.flownet = IFNet()
-        self.device()
-        self.optimG = AdamW(self.flownet.parameters(), lr=1e-6, weight_decay=1e-3) # use large weight decay may avoid NaN loss
-        self.epe = EPE()
-        self.lap = LapLoss()
-        self.sobel = SOBEL()
-        if local_rank != -1:
-            self.flownet = DDP(self.flownet, device_ids=[local_rank], output_device=local_rank)
+            img0 = cv2.imread(img0_path, cv2.IMREAD_UNCHANGED)
+            img1 = cv2.imread(img1_path, cv2.IMREAD_UNCHANGED)
+            img0 = (torch.tensor(img0.transpose(2, 0, 1)).to(self.device) / 255.).unsqueeze(0)
+            img1 = (torch.tensor(img1.transpose(2, 0, 1)).to(self.device) / 255.).unsqueeze(0)
 
-    def train(self):
-        self.flownet.train()
+        # pad
+        n, c, h, w = img0.shape
+        ph = ((h - 1) // 32 + 1) * 32
+        pw = ((w - 1) // 32 + 1) * 32
+        padding = (0, pw - w, 0, ph - h)
+        img0 = F.pad(img0, padding)
+        img1 = F.pad(img1, padding)
 
-    def eval(self):
-        self.flownet.eval()
-
-    def device(self):
-        self.flownet.to(device)
-
-    def load_model(self, path, rank=0):
-        def convert(param):
-            return {
-            k.replace("module.", ""): v
-                for k, v in param.items()
-                if "module." in k
-            }
-            
-        if rank <= 0:
-            self.flownet.load_state_dict(convert(torch.load('{}/flownet.pkl'.format(path))))
-        
-    def save_model(self, path, rank=0):
-        if rank == 0:
-            torch.save(self.flownet.state_dict(),'{}/flownet.pkl'.format(path))
-
-    def inference(self, img0, img1, scale=1, scale_list=None, TTA=False, timestep=0.5):
-        if scale_list is None:
-            scale_list = [4, 2, 1]
-        for i in range(3):
-            scale_list[i] = scale_list[i] * 1.0 / scale
-        imgs = torch.cat((img0, img1), 1)
-        flow, mask, merged, flow_teacher, merged_teacher, loss_distill = self.flownet(imgs, scale_list, timestep=timestep)
-        if TTA == False:
-            return merged[2]
+        # interpolation
+        if ratio > 0.0:
+            img_list = [img0]
+            img0_ratio, img1_ratio = 0.0, 1.0
+            if ratio <= img0_ratio + rthreshold / 2:
+                middle = img0
+            elif ratio >= img1_ratio - rthreshold / 2:
+                middle = img1
+            else:
+                tmp_img0, tmp_img1 = img0, img1
+                for _ in range(rmaxcycles):
+                    middle = self.model.inference(tmp_img0, tmp_img1)
+                    middle_ratio = (img0_ratio + img1_ratio) / 2
+                    if ratio - (rthreshold / 2) <= middle_ratio <= ratio + (rthreshold / 2):
+                        break
+                    if ratio > middle_ratio:
+                        tmp_img0 = middle
+                        img0_ratio = middle_ratio
+                    else:
+                        tmp_img1 = middle
+                        img1_ratio = middle_ratio
+            img_list.append(middle)
+            img_list.append(img1)
         else:
-            flow2, mask2, merged2, flow_teacher2, merged_teacher2, loss_distill2 = self.flownet(imgs.flip(2).flip(3), scale_list, timestep=timestep)
-            return (merged[2] + merged2[2].flip(2).flip(3)) / 2
-    
-    def update(self, imgs, gt, learning_rate=0, mul=1, training=True, flow_gt=None):
-        for param_group in self.optimG.param_groups:
-            param_group['lr'] = learning_rate
-        img0 = imgs[:, :3]
-        img1 = imgs[:, 3:]
-        if training:
-            self.train()
-        else:
-            self.eval()
-        flow, mask, merged, flow_teacher, merged_teacher, loss_distill = self.flownet(torch.cat((imgs, gt), 1), scale=[4, 2, 1])
-        loss_l1 = (self.lap(merged[2], gt)).mean()
-        loss_tea = (self.lap(merged_teacher, gt)).mean()
-        if training:
-            self.optimG.zero_grad()
-            loss_G = loss_l1 + loss_tea + loss_distill * 0.01 # when training RIFEm, the weight of loss_distill should be 0.005 or 0.002
-            loss_G.backward()
-            self.optimG.step()
-        else:
-            flow_teacher = flow[2]
-        return merged[2], {
-            'merged_tea': merged_teacher,
-            'mask': mask,
-            'mask_tea': mask,
-            'flow': flow[2][:, :2],
-            'flow_tea': flow_teacher,
-            'loss_l1': loss_l1,
-            'loss_tea': loss_tea,
-            'loss_distill': loss_distill,
-            }
+            img_list = [img0, img1]
+            for _ in range(exp):
+                tmp = []
+                for j in range(len(img_list) - 1):
+                    mid = self.model.inference(img_list[j], img_list[j + 1])
+                    tmp.append(img_list[j])
+                    tmp.append(mid)
+                tmp.append(img1)
+                img_list = tmp
+
+        # save results
+        results = []
+        if save_output:
+            if not os.path.exists('output'):
+                os.mkdir('output')
+
+        for i, tensor_img in enumerate(img_list):
+            np_img = (tensor_img[0] * 255).byte().cpu().numpy().transpose(1, 2, 0)[:h, :w]
+            results.append(np_img)
+            if save_output:
+                cv2.imwrite(f'output/img{i}.png', np_img)
+
+        return results
