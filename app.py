@@ -1,0 +1,1 @@
+print("Hello from image_gen_aux app.py")
