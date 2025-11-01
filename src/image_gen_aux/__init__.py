@@ -11,18 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# from typing import TYPE_CHECKING
 
-from typing import TYPE_CHECKING
+# from .utils import (
+#     IMAGE_AUX_SLOW_IMPORT,
+#     OptionalDependencyNotAvailable,
+#     _LazyModule,
+#     is_torch_available,
+#     is_transformers_available,
+# )
 
-from .utils import (
-    IMAGE_AUX_SLOW_IMPORT,
-    OptionalDependencyNotAvailable,
-    _LazyModule,
-    is_torch_available,
-    is_transformers_available,
-)
-
-
+# from .background_removers.ben2.ben2_background_remover import BEN2BackgroundRemover
+from .interpolaters.rife.rife import RIFE
 # Lazy Import based on
 # https://github.com/huggingface/transformers/blob/main/src/transformers/__init__.py
 
@@ -30,63 +30,63 @@ from .utils import (
 # and is used to defer the actual importing for when the objects are requested.
 # This way `import image_gen_aux` provides the names in the namespace without actually importing anything (and especially none of the backends).
 
-_import_structure = {
-    "upscalers": [],
-    "preprocessors": ["LineArtStandardPreprocessor"],
-    "background_removers": [],
-    "utils": [
-        "OptionalDependencyNotAvailable",
-        "is_torch_available",
-        "is_transformers_available",
-        "logging",
-    ],
-}
+# _import_structure = {
+#     "upscalers": [],
+#     "preprocessors": ["LineArtStandardPreprocessor"],
+#     "background_removers": [],
+#     "utils": [
+#         "OptionalDependencyNotAvailable",
+#         "is_torch_available",
+#         "is_transformers_available",
+#         "logging",
+#     ],
+# }
 
 
-try:
-    if not is_torch_available():
-        raise OptionalDependencyNotAvailable()
-except OptionalDependencyNotAvailable:
-    ...
-else:
-    _import_structure["upscalers"].extend(["UpscaleWithModel"])
-    _import_structure["preprocessors"].extend(["LineArtPreprocessor", "TeedPreprocessor"])
-    _import_structure["background_removers"].extend(["BEN2BackgroundRemover"])
+# try:
+#     if not is_torch_available():
+#         raise OptionalDependencyNotAvailable()
+# except OptionalDependencyNotAvailable:
+#     ...
+# else:
+#     _import_structure["upscalers"].extend(["UpscaleWithModel"])
+#     _import_structure["preprocessors"].extend(["LineArtPreprocessor", "TeedPreprocessor"])
+#     _import_structure["background_removers"].extend(["BEN2BackgroundRemover"])
 
-try:
-    if not (is_torch_available() and is_transformers_available()):
-        raise OptionalDependencyNotAvailable()
-except OptionalDependencyNotAvailable:
-    ...
-else:
-    _import_structure["preprocessors"].extend(["DepthPreprocessor"])
+# try:
+#     if not (is_torch_available() and is_transformers_available()):
+#         raise OptionalDependencyNotAvailable()
+# except OptionalDependencyNotAvailable:
+#     ...
+# else:
+#     _import_structure["preprocessors"].extend(["DepthPreprocessor"])
 
-if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
-    from .preprocessors import LineArtStandardPreprocessor
+# if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
+#     from .preprocessors import LineArtStandardPreprocessor
 
-    try:
-        if not is_torch_available():
-            raise OptionalDependencyNotAvailable()
-    except OptionalDependencyNotAvailable:
-        ...
-    else:
-        from .background_removers import BEN2BackgroundRemover
-        from .preprocessors import LineArtPreprocessor, TeedPreprocessor
-        from .upscalers import UpscaleWithModel
+#     try:
+#         if not is_torch_available():
+#             raise OptionalDependencyNotAvailable()
+#     except OptionalDependencyNotAvailable:
+#         ...
+#     else:
+#         from .background_removers import BEN2BackgroundRemover
+#         from .preprocessors import LineArtPreprocessor, TeedPreprocessor
+#         from .upscalers import UpscaleWithModel
 
-    try:
-        if not (is_torch_available() and is_transformers_available()):
-            raise OptionalDependencyNotAvailable()
-    except OptionalDependencyNotAvailable:
-        ...
-    else:
-        from .preprocessors import DepthPreprocessor
-else:
-    import sys
+#     try:
+#         if not (is_torch_available() and is_transformers_available()):
+#             raise OptionalDependencyNotAvailable()
+#     except OptionalDependencyNotAvailable:
+#         ...
+#     else:
+#         from .preprocessors import DepthPreprocessor
+# else:
+#     import sys
 
-    sys.modules[__name__] = _LazyModule(
-        __name__,
-        globals()["__file__"],
-        _import_structure,
-        module_spec=__spec__,
-    )
+#     sys.modules[__name__] = _LazyModule(
+#         __name__,
+#         globals()["__file__"],
+#         _import_structure,
+#         module_spec=__spec__,
+#     )
