@@ -61,7 +61,7 @@ class BEN2BackgroundRemover(BackgroundRemover, ImageMixin):
             If return_mask is False: List of processed images with background removed.
             If return_mask is True: Tuple of (processed_images, masks).
         """
-        # TODO: Add support for tentos and numpy arrays
+        # TODO: Add support for tensors and numpy arrays
         if return_type != "pil":
             raise ValueError("For the moment only 'pil' return type is supported.")
 
