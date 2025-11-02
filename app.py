@@ -1,4 +1,4 @@
-import torch
+# import torch
 # print(torch.__version__)          # should show the version you installed
 # print(torch.version.cuda)         # should say 12.1
 # print(torch.cuda.is_available())  # should be True
@@ -8,7 +8,7 @@ import torch
 # from image_gen_aux.utils import load_image
 
 # # Load the BEN2 model from your local weights
-# model = BEN2BackgroundRemover.from_pretrained(r"C:\1himan\Projects\HuggingFace\RIFE_implementation\image_gen_aux").to("cuda")
+# model = BEN2BackgroundRemover.from_pretrained("PramaLLC/BEN2").to("cpu")
 
 # # Load an image for background removal
 # image = load_image("https://images.pexels.com/photos/236599/pexels-photo-236599.jpeg?cs=srgb&dl=pexels-pixabay-236599.jpg&fm=jpg")  # Replace with your actual image path
@@ -24,7 +24,7 @@ import torch
 
 # ----------------------------------------------------------------------------------------
 
-from src.image_gen_aux import RIFE
+from image_gen_aux import RIFE
 # using from_pretrained
 model=RIFE.from_pretrained("1himan/RIFE")
 
