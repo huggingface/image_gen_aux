@@ -17,19 +17,6 @@ torch.set_grad_enabled(False)
 
 
 class RIFE():
-    """Minimal RIFE inference wrapper.
-
-    This class mirrors the behavior and expectations of the simple image-only
-    inference script (the one that imports RIFE_HDv3.Model and calls
-    model.load_model(model_dir)). It purposefully does NOT include the
-    training/research-specific imports or fallback model loading found in
-    the video script.
-
-    Usage (short):
-        rife = RIFE(model_dir="train_log")
-        outputs = rife.interpolate_image("a.png", "b.png", exp=4)
-        rife.interpolate_video("in.mp4", output_path="out.mp4", exp=2)
-    """
 
     @classmethod
     def from_pretrained(cls, pretrained_model_or_path: Union[str, os.PathLike], device=None, **kwargs):
@@ -94,7 +81,7 @@ class RIFE():
             self.model = model
             self.model.to(self.device)
             self.model.eval()
-
+    # rest of the code
     # ----------------------------- helpers ---------------------------------
     def _read_image_tensor(self, path: str) -> Tuple[torch.Tensor, int, int, bool]:
         """Read an image from disk and convert to a torch tensor on self.device.
@@ -272,7 +259,6 @@ class RIFE():
         # huggingface ecosystem without installing a lot of extra stuff, manage these
         # dependencies better later
         import skvideo.io
-        import shutil
         import _thread
         from queue import Queue
         from tqdm import tqdm
