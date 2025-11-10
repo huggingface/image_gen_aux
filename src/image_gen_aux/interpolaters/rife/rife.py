@@ -17,12 +17,10 @@ torch.set_grad_enabled(False)
 
 
 class RIFE():
-
+    
     @classmethod
     def from_pretrained(cls, pretrained_model_or_path: Union[str, os.PathLike], device=None, **kwargs):
-        # Prefer local safetensors loading (preserves the same mapping used by Model.load_model)
         path = str(pretrained_model_or_path)
-        # Resolve candidate safetensors file
         if os.path.isdir(path):
             candidate = os.path.join(path, "model.safetensors")
         else:
@@ -236,129 +234,120 @@ class RIFE():
         return saved
 
     def interpolate_video(self, video_path: str, output_path: Optional[str] = None, 
-                          exp: int = 1, fps: Optional[float] = None,
-                          scale: float = 1.0, montage: bool = False,
-                          ext: str = 'mp4', transfer_audio: bool = True) -> str:
-        """Interpolate frames in a video file.
-        
-        Args:
-            video_path: Path to input video
-            output_path: Path for output video (auto-generated if None)
-            exp: Exponential factor for frame multiplication (multi = 2**exp)
-            fps: Target FPS (auto-calculated if None)
-            scale: Scaling factor for processing (0.25, 0.5, 1.0, 2.0, 4.0)
-            montage: Whether to create side-by-side comparison
-            ext: Output video extension
-            transfer_audio: Whether to transfer audio from source
-            
-        Returns:
-            Path to the output video file
-        """
-        #TODO: these are some external dependencies we should probably manage better
-        # this is meant to be a standalone script so that user can run it within the
-        # huggingface ecosystem without installing a lot of extra stuff, manage these
-        # dependencies better later
-        import skvideo.io
-        import _thread
-        from queue import Queue
-        from tqdm import tqdm
-        from .pytorch_msssim import ssim_matlab
-        
+                      exp: int = 1, fps: Optional[float] = None,
+                      scale: float = 1.0, montage: bool = False,
+                      ext: str = 'mp4', transfer_audio: bool = True) -> str:
+        """Interpolate frames in a video file using OpenCV only (no sk-video)."""
+        try:
+            import _thread
+            from queue import Queue
+            from tqdm import tqdm
+            from .pytorch_msssim import ssim_matlab
+        except ImportError as e:
+            raise ImportError("tqdm and pytorch_msssim are required for video interpolation.") from e
+
         multi = 2 ** exp
         assert scale in [0.25, 0.5, 1.0, 2.0, 4.0]
-        
+
         # Read video properties
         videoCapture = cv2.VideoCapture(video_path)
+        if not videoCapture.isOpened():
+            raise ValueError(f"Cannot open video file: {video_path}")
+
         source_fps = videoCapture.get(cv2.CAP_PROP_FPS)
         tot_frame = int(videoCapture.get(cv2.CAP_PROP_FRAME_COUNT))
-        videoCapture.release()
-        
+        success, lastframe = videoCapture.read()
+        if not success:
+            raise ValueError(f"Failed to read first frame of {video_path}")
+        h, w, _ = lastframe.shape
+
         if fps is None:
             fps_not_assigned = True
             fps = source_fps * multi
         else:
             fps_not_assigned = False
-        
-        # Setup video reader
-        videogen = skvideo.io.vreader(video_path)
-        print("Video reading started...")
-        lastframe = next(videogen)
-        print("Video reading completed.", flush=True)
-        h, w, _ = lastframe.shape
-        
-        # Generate output path
+
         video_path_wo_ext, _ = os.path.splitext(video_path)
         if output_path is None:
             output_path = f'{video_path_wo_ext}_{multi}X_{int(np.round(fps))}fps.{ext}'
-        
-        print(f'{video_path_wo_ext}.{ext}, {tot_frame} frames in total, {source_fps}FPS to {fps}FPS')
-        
+
+        print(f'{video_path_wo_ext}.{ext}, {tot_frame} frames total, {source_fps:.2f}FPS → {fps:.2f}FPS')
+
         # Setup video writer
-        fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         vid_out = cv2.VideoWriter(output_path, fourcc, fps, (w, h))
-        
-        # Helper functions for threading
+
+        # Helper: generator to yield frames from cv2
+        def cv2_frame_generator(path):
+            cap = cv2.VideoCapture(path)
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                yield frame
+            cap.release()
+
+        # Helper threads
         def clear_write_buffer(write_buffer):
             while True:
                 item = write_buffer.get()
                 if item is None:
                     break
-                vid_out.write(item[:, :, ::-1])
-        
-        def build_read_buffer(read_buffer, videogen):
+                vid_out.write(item)
+
+        def build_read_buffer(read_buffer, generator):
             try:
-                for frame in videogen:
+                for frame in generator:
                     if montage:
-                        frame = frame[:, left: left + w]
+                        frame = frame[:, left:left + w]
                     read_buffer.put(frame)
             except:
                 pass
             read_buffer.put(None)
-        
+
         # Setup montage if needed
         if montage:
             left = w // 4
             w = w // 2
-            lastframe = lastframe[:, left: left + w]
-        
-        # Calculate padding
+            lastframe = lastframe[:, left:left + w]
+
+        # Padding for 32 multiple
         tmp = max(128, int(128 / scale))
         ph = ((h - 1) // tmp + 1) * tmp
         pw = ((w - 1) // tmp + 1) * tmp
         padding = (0, pw - w, 0, ph - h)
-        
-        # Setup buffers and threads
+
+        # Start threaded queues
         write_buffer = Queue(maxsize=500)
         read_buffer = Queue(maxsize=500)
+        videogen = cv2_frame_generator(video_path)
         _thread.start_new_thread(build_read_buffer, (read_buffer, videogen))
         _thread.start_new_thread(clear_write_buffer, (write_buffer,))
-        
-        # Process frames
+
         I1 = torch.from_numpy(np.transpose(lastframe, (2, 0, 1))).to(self.device, non_blocking=True).unsqueeze(0).float() / 255.
         I1 = F.pad(I1, padding)
         temp = None
-        
+
         pbar = tqdm(total=tot_frame)
-        
         while True:
             if temp is not None:
                 frame = temp
                 temp = None
             else:
                 frame = read_buffer.get()
-            
+
             if frame is None:
                 break
-            
+
             I0 = I1
             I1 = torch.from_numpy(np.transpose(frame, (2, 0, 1))).to(self.device, non_blocking=True).unsqueeze(0).float() / 255.
             I1 = F.pad(I1, padding)
-            
-            # Calculate SSIM for static frame detection
+
+            # SSIM check
             I0_small = F.interpolate(I0, (32, 32), mode='bilinear', align_corners=False)
             I1_small = F.interpolate(I1, (32, 32), mode='bilinear', align_corners=False)
             ssim = ssim_matlab(I0_small[:, :3], I1_small[:, :3])
-            
+
             break_flag = False
             if ssim > 0.996:
                 frame = read_buffer.get()
@@ -373,13 +362,12 @@ class RIFE():
                 I1_small = F.interpolate(I1, (32, 32), mode='bilinear', align_corners=False)
                 ssim = ssim_matlab(I0_small[:, :3], I1_small[:, :3])
                 frame = (I1[0] * 255).byte().cpu().numpy().transpose(1, 2, 0)[:h, :w]
-            
-            # Generate interpolated frames
+
             if ssim < 0.2:
                 output = [I0] * (multi - 1)
             else:
                 output = self._make_inference(I0, I1, multi - 1)
-            
+
             # Write frames
             if montage:
                 write_buffer.put(np.concatenate((lastframe, lastframe), 1))
@@ -391,33 +379,30 @@ class RIFE():
                 for mid in output:
                     mid = (mid[0] * 255.).byte().cpu().numpy().transpose(1, 2, 0)
                     write_buffer.put(mid[:h, :w])
-            
+
             pbar.update(1)
             lastframe = frame
-            
+
             if break_flag:
                 break
-        
-        # Write final frame
+
         if montage:
             write_buffer.put(np.concatenate((lastframe, lastframe), 1))
         else:
             write_buffer.put(lastframe)
         write_buffer.put(None)
-        
-        # Wait for write buffer to empty
+
         import time
         while not write_buffer.empty():
             time.sleep(0.1)
-        
+
         pbar.close()
         vid_out.release()
-        
-        # Transfer audio if appropriate
+
         if transfer_audio and fps_not_assigned:
             try:
                 self._transfer_audio(video_path, output_path)
-            except:
+            except Exception:
                 print("Audio transfer failed. Interpolated video will have no audio")
-        
+
         return output_path
