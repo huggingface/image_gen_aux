@@ -23,9 +23,7 @@ if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
     except OptionalDependencyNotAvailable:
         ...
     else:
-        from .rife import (
-            RIFE,
-        )
+        from .rife import RIFE
 else:
     import sys
 

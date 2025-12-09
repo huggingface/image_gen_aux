@@ -85,8 +85,3 @@ class Interpolater(BaseModelProcessor):
         - When input_type == "video": interpolate frames in the video
         """
         pass
-
-
-# Example usage:
-# interpolater = Interpolater.from_images("img1.jpg", "img2.jpg")
-# interpolater = Interpolater.from_video("video.mp4")

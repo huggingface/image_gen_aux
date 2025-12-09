@@ -20,66 +20,17 @@ class RIFE():
     
     @classmethod
     def from_pretrained(cls, pretrained_model_or_path: Union[str, os.PathLike], device=None, **kwargs):
-        path = str(pretrained_model_or_path)
-        if os.path.isdir(path):
-            candidate = os.path.join(path, "model.safetensors")
-        else:
-            candidate = path if path.endswith(".safetensors") else os.path.join(path, "model.safetensors")
-
-        if os.path.exists(candidate):
-            # use the Model.load_model path which loads into self.flownet correctly
-            m = Model()
-            try:
-                m.device()
-            except Exception:
-                pass
-            model_dir = path if path.endswith(os.sep) else (os.path.dirname(candidate) + os.sep)
-            m.load_model(model_dir)
-            return cls(model=m, device=device)
-
-        # not local: try to download from HF Hub and load with the same loader
-        try:
-            print("Attempting to download model.safetensors from Hugging Face Hub...")
-            hub_file = hf_hub_download(repo_id=path, filename="model.safetensors", **kwargs)
-            if os.path.exists(hub_file):
-                m = Model()
-                try:
-                    m.device()
-                except Exception:
-                    pass
-                model_dir = os.path.dirname(hub_file) + os.sep
-                m.load_model(model_dir)
-                return cls(model=m, device=device)
-        except Exception as e:
-            # fall back below if hf_hub_download failed / repo not found / private repo etc.
-            print("HF download failed or not a hub id:", e)
-
-        # final fallback: use HF mixin behaviour (for other formats / identifiers)
-        print("using the fallback from_pretrained()")
-        model = Model.from_pretrained(pretrained_model_or_path, **kwargs)
-        return cls(model=model, device=device)
-
+        model= Model.from_pretrained(pretrained_model_or_path, **kwargs)
+        return cls(model, device=device)
 
     def __init__(self, model: Union[Model, str], device: Optional[torch.device] = None):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") if device is None else device
         if torch.cuda.is_available():
             torch.backends.cudnn.enabled = True
             torch.backends.cudnn.benchmark = True
-        # so the the model can be loaded in two ways
-        # either by the .load_model() function
-        if isinstance(model, str):
-            print("The model is being loaded using .load_model()")
-            self.model = Model()
-            self.model.load_model(model)
-            print("Loaded v3.x HD model.")
-            self.model.eval()
-        # or by using 
-        else:
-            print("The model is being loaded using from_pretrained()")
-            self.model = model
-            self.model.to(self.device)
-            self.model.eval()
-    # rest of the code
+        self.model = model.to(self.device)
+        self.model.eval()
+
     # ----------------------------- helpers ---------------------------------
     def _read_image_tensor(self, path: str) -> Tuple[torch.Tensor, int, int, bool]:
         """Read an image from disk and convert to a torch tensor on self.device.
@@ -155,9 +106,9 @@ class RIFE():
             
             if os.path.getsize(target_video) == 0:
                 os.rename(target_no_audio, target_video)
-                print("Audio transfer failed. Interpolated video will have no audio")
+                # print("Audio transfer failed. Interpolated video will have no audio")
             else:
-                print("Lossless audio transfer failed. Audio was transcoded to AAC (M4A) instead.")
+                # print("Lossless audio transfer failed. Audio was transcoded to AAC (M4A) instead.")
                 os.remove(target_no_audio)
         else:
             os.remove(target_no_audio)
@@ -166,7 +117,7 @@ class RIFE():
         shutil.rmtree("temp")
 
     # --------------------------- public API --------------------------------
-    def interpolate_image(self, img0_path: str, img1_path: str, exp: int = 4, ratio: float = 0.0,
+    def interpolate_images(self, img0_path: str, img1_path: str, exp: int = 4, ratio: float = 0.0,
                           rthreshold: float = 0.02, rmaxcycles: int = 8, output_dir: str = "images/output") -> List[str]:
         """Interpolate between two images and save outputs.
 
@@ -271,7 +222,7 @@ class RIFE():
         if output_path is None:
             output_path = f'{video_path_wo_ext}_{multi}X_{int(np.round(fps))}fps.{ext}'
 
-        print(f'{video_path_wo_ext}.{ext}, {tot_frame} frames total, {source_fps:.2f}FPS → {fps:.2f}FPS')
+        # print(f'{video_path_wo_ext}.{ext}, {tot_frame} frames total, {source_fps:.2f}FPS → {fps:.2f}FPS')
 
         # Setup video writer
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -403,6 +354,6 @@ class RIFE():
             try:
                 self._transfer_audio(video_path, output_path)
             except Exception:
-                print("Audio transfer failed. Interpolated video will have no audio")
+                # print("Audio transfer failed. Interpolated video will have no audio")
 
         return output_path

@@ -71,6 +71,7 @@ if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
         ...
     else:
         from .background_removers import BEN2BackgroundRemover
+        from .interpolaters import RIFE
         from .preprocessors import LineArtPreprocessor, TeedPreprocessor
         from .upscalers import UpscaleWithModel
 
@@ -82,7 +83,6 @@ if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
     else:
         from .preprocessors import DepthPreprocessor
 else:
-    # this code is structurally unreachable - what does that mean?
     import sys
     
     sys.modules[__name__] = _LazyModule(
