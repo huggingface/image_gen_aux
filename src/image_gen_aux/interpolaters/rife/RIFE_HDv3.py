@@ -1,3 +1,6 @@
+# Originally based on code from - https://github.com/hzwer/ECCV2022-RIFE
+# with code adaptations for this library
+
 import torch
 import torch.nn as nn
 from .IFNet_HDv3 import IFNet

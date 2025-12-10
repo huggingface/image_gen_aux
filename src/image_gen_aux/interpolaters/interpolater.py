@@ -7,7 +7,7 @@ import torch
 from ..base_model_processor import BaseModelProcessor
 
 
-class Interpolater(BaseModelProcessor):
+class FrameInterpolater(BaseModelProcessor):
     """
     Abstract base class for all interpolation models.
     Defines a common API contract.

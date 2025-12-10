@@ -1,3 +1,6 @@
+# Originally based on code from - https://github.com/hzwer/ECCV2022-RIFE
+# with code adaptations for this library
+
 import os
 import cv2
 import torch
@@ -355,5 +358,4 @@ class RIFE():
                 self._transfer_audio(video_path, output_path)
             except Exception:
                 # print("Audio transfer failed. Interpolated video will have no audio")
-
-        return output_path
+                return output_path
