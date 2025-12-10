@@ -4,6 +4,7 @@
 import os
 import cv2
 import torch
+import av
 import warnings
 import numpy as np
 from torch.nn import functional as F
@@ -82,42 +83,90 @@ class RIFE():
             return [*first_half, *second_half]
 
     def _transfer_audio(self, source_video: str, target_video: str):
-        """Transfer audio from source video to target video."""
+        """Transfer audio from source video to target video using PyAV."""
         import shutil
-        
-        temp_audio_file = "./temp/audio.mkv"
-        
+        import tempfile
+
         # Create temp directory
-        if os.path.isdir("temp"):
-            shutil.rmtree("temp")
-        os.makedirs("temp")
+        temp_dir = tempfile.mkdtemp()
         
-        # Extract audio
-        os.system(f'ffmpeg -y -i "{source_video}" -c:a copy -vn {temp_audio_file}')
-        
-        target_no_audio = os.path.splitext(target_video)[0] + "_noaudio" + os.path.splitext(target_video)[1]
-        os.rename(target_video, target_no_audio)
-        
-        # Merge audio and video
-        os.system(f'ffmpeg -y -i "{target_no_audio}" -i {temp_audio_file} -c copy "{target_video}"')
-        
-        if os.path.getsize(target_video) == 0:
-            # Try AAC conversion
-            temp_audio_file = "./temp/audio.m4a"
-            os.system(f'ffmpeg -y -i "{source_video}" -c:a aac -b:a 160k -vn {temp_audio_file}')
-            os.system(f'ffmpeg -y -i "{target_no_audio}" -i {temp_audio_file} -c copy "{target_video}"')
+        try:
+            # Open source video
+            source_container = av.open(source_video)
             
-            if os.path.getsize(target_video) == 0:
-                os.rename(target_no_audio, target_video)
-                # print("Audio transfer failed. Interpolated video will have no audio")
-            else:
-                # print("Lossless audio transfer failed. Audio was transcoded to AAC (M4A) instead.")
+            # Check if source has audio streams
+            audio_streams = [s for s in source_container.streams if s.type == 'audio']
+            
+            if not audio_streams:
+                # No audio to transfer
+                source_container.close()
+                return
+            
+            # Open target video (video without audio)
+            target_container = av.open(target_video)
+            
+            # Create output file
+            target_no_audio = os.path.splitext(target_video)[0] + "_noaudio" + os.path.splitext(target_video)[1]
+            os.rename(target_video, target_no_audio)
+            
+            # Open renamed file for reading
+            video_container = av.open(target_no_audio)
+            
+            # Create output container
+            output_container = av.open(target_video, 'w')
+            
+            # Add video streams from target
+            video_stream_mapping = {}
+            for stream in video_container.streams.video:
+                out_stream = output_container.add_stream(template=stream)
+                video_stream_mapping[stream] = out_stream
+            
+            # Add audio streams from source
+            audio_stream_mapping = {}
+            for stream in source_container.streams.audio:
+                out_stream = output_container.add_stream(template=stream)
+                audio_stream_mapping[stream] = out_stream
+            
+            # Copy video packets
+            for packet in video_container.demux():
+                if packet.stream.type == 'video':
+                    packet.stream = video_stream_mapping[packet.stream]
+                    output_container.mux(packet)
+            
+            # Reopen source to copy audio
+            source_container.close()
+            source_container = av.open(source_video)
+            
+            # Copy audio packets
+            for packet in source_container.demux():
+                if packet.stream.type == 'audio':
+                    if packet.stream in audio_stream_mapping:
+                        packet.stream = audio_stream_mapping[packet.stream]
+                        output_container.mux(packet)
+            
+            # Close all containers
+            video_container.close()
+            source_container.close()
+            output_container.close()
+            
+            # Verify output file is valid
+            if os.path.getsize(target_video) > 0:
+                # Success - remove the temp file
                 os.remove(target_no_audio)
-        else:
-            os.remove(target_no_audio)
-        
-        # Cleanup
-        shutil.rmtree("temp")
+            else:
+                # Failed - restore original
+                os.rename(target_no_audio, target_video)
+                
+        except Exception as e:
+            # On any error, restore original file if it exists
+            if os.path.exists(target_no_audio):
+                if os.path.exists(target_video):
+                    os.remove(target_video)
+                os.rename(target_no_audio, target_video)
+        finally:
+            # Cleanup temp directory
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
 
     # --------------------------- public API --------------------------------
     def interpolate_images(self, img0_path: str, img1_path: str, exp: int = 4, ratio: float = 0.0,
@@ -191,7 +240,7 @@ class RIFE():
                       exp: int = 1, fps: Optional[float] = None,
                       scale: float = 1.0, montage: bool = False,
                       ext: str = 'mp4', transfer_audio: bool = True) -> str:
-        """Interpolate frames in a video file using OpenCV only (no sk-video)."""
+        """Interpolate frames in a video file using OpenCV"""
         try:
             import _thread
             from queue import Queue
