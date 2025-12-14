@@ -4,12 +4,12 @@
 import os
 import cv2
 import torch
-import av
 import warnings
 import numpy as np
 from torch.nn import functional as F
 from typing import List, Optional, Tuple, Union
 from huggingface_hub import hf_hub_download
+from ..frame_interpolater import FrameInterpolater
 
 # IMPORTANT: this file intentionally imports the single model (RIFE_HDv3).
 # It does NOT try multiple model fallbacks
@@ -19,7 +19,7 @@ warnings.filterwarnings("ignore")
 torch.set_grad_enabled(False)
 
 
-class RIFE:
+class RIFE(FrameInterpolater):
     @classmethod
     def from_pretrained(cls, pretrained_model_or_path: Union[str, os.PathLike], device=None, **kwargs):
         model = Model.from_pretrained(pretrained_model_or_path, **kwargs)
@@ -34,7 +34,6 @@ class RIFE:
         self.model.eval()
 
     # ----------------------------- helpers ---------------------------------
-
     def _read_image_tensor(self, path: str) -> Tuple[torch.Tensor, int, int, bool]:
         if path.lower().endswith(".exr"):
             img = cv2.imread(path, cv2.IMREAD_COLOR | cv2.IMREAD_ANYDEPTH)
@@ -226,9 +225,13 @@ class RIFE:
             import _thread
             from queue import Queue
             from tqdm import tqdm
-            from .pytorch_msssim import ssim_matlab
+            from .ssim_matlab import ssim_matlab
+            import av
+
         except ImportError as e:
-            raise ImportError("tqdm and pytorch_msssim are required for video interpolation.") from e
+            raise ImportError(
+                "Pyav is required for video interpolation to work. Run `pip install av` to continue without errors."
+            ) from e
 
         multi = 2**exp
         assert scale in [0.25, 0.5, 1.0, 2.0, 4.0]
@@ -337,6 +340,7 @@ class RIFE:
             try:
                 self._transfer_audio(video_path, output_path)
             except Exception:
+                print("Audio transfer Failed, the output video will not have any audio")
                 pass
 
         return output_path
