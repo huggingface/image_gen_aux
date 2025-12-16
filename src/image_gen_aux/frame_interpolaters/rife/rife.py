@@ -20,12 +20,40 @@ torch.set_grad_enabled(False)
 
 
 class RIFE(FrameInterpolater):
+    """
+    Real-Time Intermediate Flow Estimation (RIFE) for Video Frame Interpolation.
+
+    This class handles loading the RIFE model and performing inference to generate
+    intermediate frames between images or to upsample the frame rate of videos.
+    """
+
     @classmethod
     def from_pretrained(cls, pretrained_model_or_path: Union[str, os.PathLike], device=None, **kwargs):
+        """
+        Loads the RIFE model from a pretrained path or HuggingFace repository.
+
+        Args:
+            pretrained_model_or_path (str or os.PathLike): File path to the model checkpoint
+                or the repo-id for HuggingFace Hub.
+            device (torch.device, optional): The device to load the model onto.
+                Defaults to None (auto-detects CUDA/CPU).
+            **kwargs: Additional keyword arguments passed to the Model loader.
+
+        Returns:
+            RIFE: An instance of the RIFE interpolator with the loaded model.
+        """
         model = Model.from_pretrained(pretrained_model_or_path, **kwargs)
         return cls(model, device=device)
 
     def __init__(self, model: Union[Model, str], device: Optional[torch.device] = None):
+        """
+        Initializes the RIFE interpolator.
+
+        Args:
+            model (Model or str): The loaded RIFE model instance.
+            device (torch.device, optional): The execution device.
+                If None, attempts to use CUDA if available, otherwise CPU.
+        """
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") if device is None else device
         if torch.cuda.is_available():
             torch.backends.cudnn.enabled = True
@@ -88,9 +116,6 @@ class RIFE(FrameInterpolater):
             source_container = av.open(source_video)
             audio_streams = [s for s in source_container.streams if s.type == "audio"]
             if not audio_streams:
-                raise Exception(
-                    "The input video does not contain any audio, this will not effect interpolation but the output video will not have any audio either. To avoid this error use `transfer_audio = False`."
-                )
                 source_container.close()
                 return
 
@@ -152,26 +177,36 @@ class RIFE(FrameInterpolater):
         rmaxcycles: int = 8,
         output_dir: Optional[str] = None,
     ) -> List[str] | List[torch.Tensor]:
+        """
+        Generates intermediate frames between two input images.
+
+        Args:
+            img0_path (str): Path to the first (start) image.
+            img1_path (str): Path to the second (end) image.
+            exp (int, optional): The exponent base 2 used to determine the number of frames generated.
+                For example, `exp=2` generates 2^2 = 4 frames.
+                This argument is ignored if `ratio` > 0. Defaults to 4.
+            ratio (float, optional): A value between 0.0 and 1.0 determining the temporal position
+                of the interpolated frame. 0.0 is img0, 1.0 is img1.
+                If provided (not 0.0), a specific single frame is generated at this ratio
+                using binary search recursion. Defaults to 0.0.
+            rthreshold (float, optional): The acceptable error threshold for the `ratio` calculation.
+                Used only when `ratio` is specified. Defaults to 0.02.
+            rmaxcycles (int, optional): The maximum number of recursive inference cycles to perform
+                when converging on the `ratio`. Used only when `ratio` is specified. Defaults to 8.
+            output_dir (str, optional): The directory to save the interpolated frames.
+                If None, the frames are returned as a list of torch.Tensors in memory.
+
+        Returns:
+            List[str] | List[torch.Tensor]:
+                - If `output_dir` is provided: Returns a list of file paths to the saved images.
+                - If `output_dir` is None: Returns a list of torch.Tensors (C, H, W) of the frames.
+
+        Raises:
+            ValueError: If input images have differing dimensions.
+        """
         img0, h0, w0, exr0 = self._read_image_tensor(img0_path)
         img1, h1, w1, exr1 = self._read_image_tensor(img1_path)
-
-        """
-        Args:
-            img0_path(`str`): Path to the first of the two images to interpolate the middle frame(s).
-            img1_path(`str`): Path to the second image.
-            exp[short for exponent](`int = 4`): The exponent to the base 2, to which you want the number
-                of frames to be generated. For example if you want 4 frames to be generated between 
-                the given two images set exp=2, which'll be calculated to 2^2 = 4.
-            ratio(`float=0.0`): This argument decides that, how close you want the interpolated frame
-                to either of the input image. For example: By defaul ratio for img0_path is 0 and
-                img1_path is 1, if input ratio is 0.8, the inerpolated image will be more "closer"
-                to the img1_path.
-            rthreshold(`float = 0,02`):
-            rmaxcycles(`int = 8`)
-            output_dir(`Optional[str] = None`): The output directory where the user want the interpolated
-                frames to be dumped. In case not provided, interpolated frames are returned as list
-                of torch.Tensor.
-        """
 
         if h0 != h1 or w0 != w1:
             raise ValueError("Input images must have the same dimensions")
@@ -179,6 +214,7 @@ class RIFE(FrameInterpolater):
         img0, img1, _ = self._pad_pair_to_32(img0, img1)
         h, w = h0, w0
 
+        # Mode 1: Arbitrary Ratio Interpolation (Binary Search)
         if ratio:
             img_list = [img0]
             img0_ratio, img1_ratio = 0.0, 1.0
@@ -203,6 +239,7 @@ class RIFE(FrameInterpolater):
 
             img_list.extend([middle, img1])
 
+        # Mode 2: Uniform Multi-Frame Interpolation (2^exp frames)
         else:
             img_list = [img0, img1]
             for _ in range(exp):
@@ -213,9 +250,11 @@ class RIFE(FrameInterpolater):
                 tmp.append(img1)
                 img_list = tmp
 
+        # Return Tensors if no output directory
         if output_dir is None:
             return [t[:, :, :h, :w].contiguous() for t in img_list]
 
+        # Save images if output directory is provided
         os.makedirs(output_dir, exist_ok=True)
         saved = []
 
@@ -245,18 +284,30 @@ class RIFE(FrameInterpolater):
         transfer_audio: bool = True,
     ) -> str:
         """
+        Upsamples a video file by interpolating intermediate frames.
+
         Args:
-           video_path(`str`): Path to the video that is to be interpolated.
-           output_path(`Optional[str]: None`): Directory where the interpolated video is to be saved.
-                In case not provided, the output video will be saved in the same direcotry as `video_path`.
-           exp(`int = 1`):
-           fps(`Optional[float] = None`): Exact number of fps the output vidoe should have. If used, then
-                then the output video will have no audio.
-           scale(`float = 1.0`):
-           montage(`bool = False`): Used for comparing input and output vidoes side by side.
-           ext(`str = "mp4"`): Desired extension for the output video.
-           transfer_audio(`bool = True`): Decides whether the output video will have the audio transferred
-                from the input video or not.
+           video_path (str): Path to the source video file.
+           output_path (str, optional): Directory or file path where the interpolated video will be saved.
+                If None, saves to the same directory as input with a suffix.
+           exp (int, optional): The exponent for the interpolation multiplier.
+                The resulting frame rate will be `source_fps * (2^exp)`. Defaults to 1 (2x slow motion/smoothness).
+           fps (float, optional): Specific target FPS for the output video.
+                If provided, `exp` is used for frame generation count, but the video header is written
+                with this specific FPS. **Note:** If `fps` is manually set, audio transfer is disabled.
+           scale (float, optional): Flow scale multiplier (0.25, 0.5, 1.0, 2.0, 4.0).
+                Controls the resolution processed by the model's optical flow. Defaults to 1.0.
+           montage (bool, optional): If True, creates a side-by-side comparison of the input and output video.
+                Useful for debugging or visualization. Defaults to False.
+           ext (str, optional): The file extension for the output video container (e.g., "mp4"). Defaults to "mp4".
+           transfer_audio (bool, optional): If True, attempts to transfer audio from source to output.
+                Requires `fps` to be None. Defaults to True.
+
+        Returns:
+            str: The file path of the generated video.
+
+        Raises:
+            ValueError: If the video cannot be opened or `scale` is invalid.
         """
         import _thread
         from queue import Queue
@@ -264,7 +315,7 @@ class RIFE(FrameInterpolater):
         from .ssim_matlab import ssim_matlab
 
         multi = 2**exp
-        assert scale in [0.25, 0.5, 1.0, 2.0, 4.0]
+        assert scale in [0.25, 0.5, 1.0, 2.0, 4.0], "Scale must be one of [0.25, 0.5, 1.0, 2.0, 4.0]"
 
         videoCapture = cv2.VideoCapture(video_path)
         if not videoCapture.isOpened():
