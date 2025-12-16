@@ -74,15 +74,23 @@ class RIFE(FrameInterpolater):
         return [*first, *second]
 
     def _transfer_audio(self, source_video: str, target_video: str):
-        import shutil
-        import tempfile
+        try:
+            import av
+            import shutil
+            import tempfile
+        except ImportError as e:
+            raise ImportError(
+                "Pyav is required for audio transfer to work in video interpolation logic. Run `pip install av` or `transfer_audio = False` to continue without errors."
+            ) from e
 
         temp_dir = tempfile.mkdtemp()
-
         try:
             source_container = av.open(source_video)
             audio_streams = [s for s in source_container.streams if s.type == "audio"]
             if not audio_streams:
+                raise Exception(
+                    "The input video does not contain any audio, this will not effect interpolation but the output video will not have any audio either. To avoid this error use `transfer_audio = False`."
+                )
                 source_container.close()
                 return
 
@@ -126,17 +134,14 @@ class RIFE(FrameInterpolater):
             else:
                 os.rename(target_no_audio, target_video)
 
-        except Exception:
-            if os.path.exists(target_no_audio):
-                if os.path.exists(target_video):
-                    os.remove(target_video)
-                os.rename(target_no_audio, target_video)
+        except Exception as e:
+            raise Exception
+
         finally:
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
 
     # --------------------------- public API --------------------------------
-
     def interpolate_images(
         self,
         img0_path: str,
@@ -149,6 +154,24 @@ class RIFE(FrameInterpolater):
     ) -> List[str] | List[torch.Tensor]:
         img0, h0, w0, exr0 = self._read_image_tensor(img0_path)
         img1, h1, w1, exr1 = self._read_image_tensor(img1_path)
+
+        """
+        Args:
+            img0_path(`str`): Path to the first of the two images to interpolate the middle frame(s).
+            img1_path(`str`): Path to the second image.
+            exp[short for exponent](`int = 4`): The exponent to the base 2, to which you want the number
+                of frames to be generated. For example if you want 4 frames to be generated between 
+                the given two images set exp=2, which'll be calculated to 2^2 = 4.
+            ratio(`float=0.0`): This argument decides that, how close you want the interpolated frame
+                to either of the input image. For example: By defaul ratio for img0_path is 0 and
+                img1_path is 1, if input ratio is 0.8, the inerpolated image will be more "closer"
+                to the img1_path.
+            rthreshold(`float = 0,02`):
+            rmaxcycles(`int = 8`)
+            output_dir(`Optional[str] = None`): The output directory where the user want the interpolated
+                frames to be dumped. In case not provided, interpolated frames are returned as list
+                of torch.Tensor.
+        """
 
         if h0 != h1 or w0 != w1:
             raise ValueError("Input images must have the same dimensions")
@@ -221,17 +244,24 @@ class RIFE(FrameInterpolater):
         ext: str = "mp4",
         transfer_audio: bool = True,
     ) -> str:
-        try:
-            import _thread
-            from queue import Queue
-            from tqdm import tqdm
-            from .ssim_matlab import ssim_matlab
-            import av
-
-        except ImportError as e:
-            raise ImportError(
-                "Pyav is required for video interpolation to work. Run `pip install av` to continue without errors."
-            ) from e
+        """
+        Args:
+           video_path(`str`): Path to the video that is to be interpolated.
+           output_path(`Optional[str]: None`): Directory where the interpolated video is to be saved.
+                In case not provided, the output video will be saved in the same direcotry as `video_path`.
+           exp(`int = 1`):
+           fps(`Optional[float] = None`): Exact number of fps the output vidoe should have. If used, then
+                then the output video will have no audio.
+           scale(`float = 1.0`):
+           montage(`bool = False`): Used for comparing input and output vidoes side by side.
+           ext(`str = "mp4"`): Desired extension for the output video.
+           transfer_audio(`bool = True`): Decides whether the output video will have the audio transferred
+                from the input video or not.
+        """
+        import _thread
+        from queue import Queue
+        from tqdm import tqdm
+        from .ssim_matlab import ssim_matlab
 
         multi = 2**exp
         assert scale in [0.25, 0.5, 1.0, 2.0, 4.0]
@@ -339,8 +369,7 @@ class RIFE(FrameInterpolater):
         if transfer_audio and fps_not_assigned:
             try:
                 self._transfer_audio(video_path, output_path)
-            except Exception:
-                print("Audio transfer Failed, the output video will not have any audio")
-                pass
+            except Exception as e:
+                raise Exception("Audio transfer failed") from e
 
         return output_path
