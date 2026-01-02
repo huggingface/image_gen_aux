@@ -31,7 +31,7 @@ from .utils import (
 _import_structure = {
     "upscalers": [],
     "preprocessors": ["LineArtStandardPreprocessor"],
-    "frame_interpolaters": [],
+    "frame_interpolators": [],
     "background_removers": [],
     "utils": [
         "OptionalDependencyNotAvailable",
@@ -49,7 +49,7 @@ except OptionalDependencyNotAvailable:
     ...
 else:
     _import_structure["upscalers"].extend(["UpscaleWithModel"])
-    _import_structure["frame_interpolaters"].extend(["RIFE"])
+    _import_structure["frame_interpolators"].extend(["RIFE"])
     _import_structure["preprocessors"].extend(["LineArtPreprocessor", "TeedPreprocessor"])
     _import_structure["background_removers"].extend(["BEN2BackgroundRemover"])
 
@@ -71,7 +71,7 @@ if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
         ...
     else:
         from .background_removers import BEN2BackgroundRemover
-        from .frame_interpolaters import RIFE
+        from .frame_interpolators import RIFE
         from .preprocessors import LineArtPreprocessor, TeedPreprocessor
         from .upscalers import UpscaleWithModel
 
@@ -84,7 +84,7 @@ if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
         from .preprocessors import DepthPreprocessor
 else:
     import sys
-    
+
     sys.modules[__name__] = _LazyModule(
         __name__,
         globals()["__file__"],

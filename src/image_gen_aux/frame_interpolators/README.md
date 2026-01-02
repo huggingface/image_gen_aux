@@ -1,4 +1,4 @@
-# RIFE interpolaters
+# RIFE interpolator
 
 Usage
 

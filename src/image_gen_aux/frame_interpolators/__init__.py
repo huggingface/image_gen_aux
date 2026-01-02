@@ -1,10 +1,15 @@
 from typing import TYPE_CHECKING
 
-from ...utils import IMAGE_AUX_SLOW_IMPORT, OptionalDependencyNotAvailable, _LazyModule, is_torch_available
+from ..utils import (
+    IMAGE_AUX_SLOW_IMPORT,
+    OptionalDependencyNotAvailable,
+    _LazyModule,
+    is_torch_available,
+    is_transformers_available,
+)
 
 
-_import_structure = {
-}
+_import_structure = {}
 
 try:
     if not (is_torch_available()):
@@ -12,9 +17,7 @@ try:
 except OptionalDependencyNotAvailable:
     ...
 else:
-    _import_structure["rife"] = [
-        "RIFE",
-    ]
+    _import_structure["rife_interpolator"] = ["RIFE"]
 
 if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
     try:
@@ -23,7 +26,7 @@ if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
     except OptionalDependencyNotAvailable:
         ...
     else:
-        from .rife import RIFE
+        from rife_interpolator import RIFE
 else:
     import sys
 

@@ -9,7 +9,7 @@ import numpy as np
 from torch.nn import functional as F
 from typing import List, Optional, Tuple, Union
 from huggingface_hub import hf_hub_download
-from ..frame_interpolater import FrameInterpolater
+from ..frame_interpolator import FrameInterpolator
 
 # IMPORTANT: this file intentionally imports the single model (RIFE_HDv3).
 # It does NOT try multiple model fallbacks
@@ -19,7 +19,7 @@ warnings.filterwarnings("ignore")
 torch.set_grad_enabled(False)
 
 
-class RIFE(FrameInterpolater):
+class RIFE(FrameInterpolator):
     """
     Real-Time Intermediate Flow Estimation (RIFE) for Video Frame Interpolation.
 

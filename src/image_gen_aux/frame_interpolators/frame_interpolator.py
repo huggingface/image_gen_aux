@@ -6,11 +6,11 @@ import torch
 from ..base_model_processor import BaseModelProcessor
 
 
-class FrameInterpolater(BaseModelProcessor):
+class FrameInterpolator(BaseModelProcessor):
     """
     Abstract base class for all interpolation models.
     Defines a common API contract.
     """
-    
+
     def __init__(self):
         super().__init__()
