@@ -17,7 +17,7 @@ try:
 except OptionalDependencyNotAvailable:
     ...
 else:
-    _import_structure["rife_interpolator"] = ["RIFE"]
+    _import_structure["rife_interpolator"] = ["RIFEFrameInterpolator"]
 
 if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
     try:
@@ -26,7 +26,7 @@ if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
     except OptionalDependencyNotAvailable:
         ...
     else:
-        from rife_interpolator import RIFE
+        from .rife_interpolator import RIFEFrameInterpolator
 else:
     import sys
 

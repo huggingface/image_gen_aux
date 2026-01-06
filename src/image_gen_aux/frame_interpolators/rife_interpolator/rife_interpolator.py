@@ -2,24 +2,26 @@
 # with code adaptations for this library
 
 import os
-import cv2
-import torch
 import warnings
-import numpy as np
-from torch.nn import functional as F
 from typing import List, Optional, Tuple, Union
-from huggingface_hub import hf_hub_download
+
+import cv2
+import numpy as np
+import torch
+from torch.nn import functional as F
+
 from ..frame_interpolator import FrameInterpolator
 
 # IMPORTANT: this file intentionally imports the single model (RIFE_HDv3).
 # It does NOT try multiple model fallbacks
 from .RIFE_HDv3 import Model
 
+
 warnings.filterwarnings("ignore")
 torch.set_grad_enabled(False)
 
 
-class RIFE(FrameInterpolator):
+class RIFEFrameInterpolator(FrameInterpolator):
     """
     Real-Time Intermediate Flow Estimation (RIFE) for Video Frame Interpolation.
 
@@ -103,9 +105,10 @@ class RIFE(FrameInterpolator):
 
     def _transfer_audio(self, source_video: str, target_video: str):
         try:
-            import av
             import shutil
             import tempfile
+
+            import av
         except ImportError as e:
             raise ImportError(
                 "Pyav is required for audio transfer to work in video interpolation logic. Run `pip install av` or `transfer_audio = False` to continue without errors."
@@ -311,7 +314,9 @@ class RIFE(FrameInterpolator):
         """
         import _thread
         from queue import Queue
+
         from tqdm import tqdm
+
         from .ssim_matlab import ssim_matlab
 
         multi = 2**exp

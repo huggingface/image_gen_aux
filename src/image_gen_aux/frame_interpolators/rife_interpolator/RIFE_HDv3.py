@@ -3,9 +3,10 @@
 
 import torch
 import torch.nn as nn
-from .IFNet_HDv3 import IFNet
-from safetensors.torch import load_file
 from huggingface_hub import PyTorchModelHubMixin
+
+from .IFNet_HDv3 import IFNet
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
