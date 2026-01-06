@@ -4,7 +4,7 @@ Real-time video frame interpolation (VFI) is very useful in video processing, me
 
 ## Usage
 
-### With Images
+### Images
 
 ```py
 from image_gen_aux import RIFEFrameInterpolator
