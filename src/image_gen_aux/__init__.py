@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from typing import TYPE_CHECKING
 
 from .utils import (
@@ -21,7 +20,6 @@ from .utils import (
     is_torch_available,
     is_transformers_available,
 )
-
 
 # Lazy Import based on
 # https://github.com/huggingface/transformers/blob/main/src/transformers/__init__.py
@@ -33,6 +31,7 @@ from .utils import (
 _import_structure = {
     "upscalers": [],
     "preprocessors": ["LineArtStandardPreprocessor"],
+    "frame_interpolators": [],
     "background_removers": [],
     "utils": [
         "OptionalDependencyNotAvailable",
@@ -50,6 +49,7 @@ except OptionalDependencyNotAvailable:
     ...
 else:
     _import_structure["upscalers"].extend(["UpscaleWithModel"])
+    _import_structure["frame_interpolators"].extend(["RIFE"])
     _import_structure["preprocessors"].extend(["LineArtPreprocessor", "TeedPreprocessor"])
     _import_structure["background_removers"].extend(["BEN2BackgroundRemover"])
 
@@ -71,6 +71,7 @@ if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
         ...
     else:
         from .background_removers import BEN2BackgroundRemover
+        from .frame_interpolators import RIFE
         from .preprocessors import LineArtPreprocessor, TeedPreprocessor
         from .upscalers import UpscaleWithModel
 
