@@ -1,9 +1,11 @@
 # Originally based on code from - https://github.com/hzwer/ECCV2022-RIFE
 # with code adaptations for this library
 
+from math import exp
+
 import torch
 import torch.nn.functional as F
-from math import exp
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -82,5 +84,3 @@ def ssim_matlab(img1, img2, window_size=11, window=None, size_average=True, full
     if full:
         return ret, cs
     return ret
-
-

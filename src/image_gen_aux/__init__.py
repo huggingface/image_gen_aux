@@ -21,6 +21,7 @@ from .utils import (
     is_transformers_available,
 )
 
+
 # Lazy Import based on
 # https://github.com/huggingface/transformers/blob/main/src/transformers/__init__.py
 
@@ -49,7 +50,7 @@ except OptionalDependencyNotAvailable:
     ...
 else:
     _import_structure["upscalers"].extend(["UpscaleWithModel"])
-    _import_structure["frame_interpolators"].extend(["RIFE"])
+    _import_structure["frame_interpolators"].extend(["RIFEFrameInterpolator"])
     _import_structure["preprocessors"].extend(["LineArtPreprocessor", "TeedPreprocessor"])
     _import_structure["background_removers"].extend(["BEN2BackgroundRemover"])
 
@@ -71,7 +72,7 @@ if TYPE_CHECKING or IMAGE_AUX_SLOW_IMPORT:
         ...
     else:
         from .background_removers import BEN2BackgroundRemover
-        from .frame_interpolators import RIFE
+        from .frame_interpolators import RIFEFrameInterpolator
         from .preprocessors import LineArtPreprocessor, TeedPreprocessor
         from .upscalers import UpscaleWithModel
 
