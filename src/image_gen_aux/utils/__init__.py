@@ -23,3 +23,6 @@ from .import_utils import (
 from .loading_utils import load_image
 from .model_utils import get_model_path
 from .tiling_utils import create_gradient_mask, tiled_upscale
+
+
+__version__ = "0.0.1"
