@@ -105,25 +105,22 @@ class RIFEFrameInterpolator(FrameInterpolator):
 
     def _transfer_audio(self, source_video: str, target_video: str):
         try:
-            import shutil
-            import tempfile
-
             import av
         except ImportError as e:
             raise ImportError(
                 "Pyav is required for audio transfer to work in video interpolation logic. Run `pip install av` or `transfer_audio = False` to continue without errors."
             ) from e
 
-        temp_dir = tempfile.mkdtemp()
+        source_container = None
+        video_container = None
+        output_container = None
+        target_no_audio = os.path.splitext(target_video)[0] + "_noaudio" + os.path.splitext(target_video)[1]
         try:
             source_container = av.open(source_video)
             audio_streams = [s for s in source_container.streams if s.type == "audio"]
             if not audio_streams:
-                source_container.close()
                 return
 
-            target_container = av.open(target_video)
-            target_no_audio = os.path.splitext(target_video)[0] + "_noaudio" + os.path.splitext(target_video)[1]
             os.rename(target_video, target_no_audio)
 
             video_container = av.open(target_no_audio)
@@ -131,31 +128,25 @@ class RIFEFrameInterpolator(FrameInterpolator):
 
             video_stream_mapping = {}
             for stream in video_container.streams.video:
-                out_stream = output_container.add_stream(template=stream)
+                out_stream = output_container.add_stream_from_template(stream)
                 video_stream_mapping[stream] = out_stream
 
             audio_stream_mapping = {}
             for stream in source_container.streams.audio:
-                out_stream = output_container.add_stream(template=stream)
-                audio_stream_mapping[stream] = out_stream
+                out_stream = output_container.add_stream_from_template(stream)
+                audio_stream_mapping[stream.index] = out_stream
 
             for packet in video_container.demux():
-                if packet.stream.type == "video":
+                if packet.stream.type == "video" and packet.dts is not None:
                     packet.stream = video_stream_mapping[packet.stream]
                     output_container.mux(packet)
 
-            source_container.close()
-            source_container = av.open(source_video)
-
             for packet in source_container.demux():
-                if packet.stream.type == "audio":
-                    if packet.stream in audio_stream_mapping:
-                        packet.stream = audio_stream_mapping[packet.stream]
+                if packet.stream.type == "audio" and packet.dts is not None:
+                    out_stream = audio_stream_mapping.get(packet.stream.index)
+                    if out_stream is not None:
+                        packet.stream = out_stream
                         output_container.mux(packet)
-
-            video_container.close()
-            source_container.close()
-            output_container.close()
 
             if os.path.getsize(target_video) > 0:
                 os.remove(target_no_audio)
@@ -163,11 +154,15 @@ class RIFEFrameInterpolator(FrameInterpolator):
                 os.rename(target_no_audio, target_video)
 
         except Exception as e:
-            raise Exception
+            raise RuntimeError(f"Failed to transfer audio from '{source_video}' to '{target_video}': {e}") from e
 
         finally:
-            if os.path.exists(temp_dir):
-                shutil.rmtree(temp_dir)
+            if output_container is not None:
+                output_container.close()
+            if video_container is not None:
+                video_container.close()
+            if source_container is not None:
+                source_container.close()
 
     # --------------------------- public API --------------------------------
     def interpolate_images(
@@ -331,7 +326,7 @@ class RIFEFrameInterpolator(FrameInterpolator):
         success, lastframe = videoCapture.read()
         if not success:
             raise ValueError(f"Failed to read first frame of {video_path}")
-        h, w, _ = lastframe.shape
+        height, width, _ = lastframe.shape
 
         if fps is None:
             fps_not_assigned = True
@@ -343,8 +338,9 @@ class RIFEFrameInterpolator(FrameInterpolator):
         if output_path is None:
             output_path = f"{video_path_wo_ext}_{multi}X_{int(np.round(fps))}fps.{ext}"
 
+        final_width = width * 2 if montage else width
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        vid_out = cv2.VideoWriter(output_path, fourcc, fps, (w, h))
+        vid_out = cv2.VideoWriter(output_path, fourcc, fps, (final_width, height))
 
         def cv2_frame_generator(path):
             cap = cv2.VideoCapture(path)
@@ -364,20 +360,13 @@ class RIFEFrameInterpolator(FrameInterpolator):
 
         def build_read_buffer(read_buffer, generator):
             for frame in generator:
-                if montage:
-                    frame = frame[:, left : left + w]
                 read_buffer.put(frame)
             read_buffer.put(None)
 
-        if montage:
-            left = w // 4
-            w = w // 2
-            lastframe = lastframe[:, left : left + w]
-
         tmp = max(128, int(128 / scale))
-        ph = ((h - 1) // tmp + 1) * tmp
-        pw = ((w - 1) // tmp + 1) * tmp
-        padding = (0, pw - w, 0, ph - h)
+        ph = ((height - 1) // tmp + 1) * tmp
+        pw = ((width - 1) // tmp + 1) * tmp
+        padding = (0, pw - width, 0, ph - height)
 
         write_buffer = Queue(maxsize=500)
         read_buffer = Queue(maxsize=500)
@@ -410,15 +399,25 @@ class RIFEFrameInterpolator(FrameInterpolator):
             else:
                 output = self._make_inference(I0, I1, multi - 1)
 
-            vid_out.write(lastframe)
+            if montage:
+                vid_out.write(np.concatenate((lastframe, lastframe), axis=1))
+            else:
+                vid_out.write(lastframe)
             for mid in output:
                 mid = (mid[0] * 255).byte().cpu().numpy().transpose(1, 2, 0)
-                vid_out.write(mid[:h, :w])
+                frame_out = mid[:height, :width]
+                if montage:
+                    vid_out.write(np.concatenate((lastframe, frame_out), axis=1))
+                else:
+                    vid_out.write(frame_out)
 
             pbar.update(1)
             lastframe = frame
 
-        vid_out.write(lastframe)
+        if montage:
+            vid_out.write(np.concatenate((lastframe, lastframe), axis=1))
+        else:
+            vid_out.write(lastframe)
         pbar.close()
         vid_out.release()
 
@@ -426,6 +425,6 @@ class RIFEFrameInterpolator(FrameInterpolator):
             try:
                 self._transfer_audio(video_path, output_path)
             except Exception as e:
-                raise Exception("Audio transfer failed") from e
+                raise RuntimeError(f"Audio transfer failed for '{video_path}' -> '{output_path}': {e}") from e
 
         return output_path
